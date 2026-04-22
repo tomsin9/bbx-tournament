@@ -1,0 +1,87 @@
+{
+  "app": { "title": "BBX 比賽管理" },
+  "nav": {
+    "home": "首頁",
+    "setup": "設定",
+    "players": "選手",
+    "lobby": "大廳",
+    "history": "紀錄",
+    "match": "對戰"
+  },
+  "home": {
+    "tagline": "本機優先的 BBX 計分工具。無伺服器，資料只留在你的瀏覽器。",
+    "newTournament": "新建比賽",
+    "import": "匯入 JSON",
+    "importHint": "載入備份檔（.json）。確認後會覆寫現有資料。",
+    "tournamentList": "賽事清單",
+    "noTournament": "暫時沒有賽事。",
+    "openTournament": "開啟",
+    "deleteTournament": "刪除",
+    "deleteTournamentConfirm": "確定刪除此賽事？此操作無法還原。",
+    "goLobby": "前往大廳",
+    "goSetup": "繼續設定"
+  },
+  "setup": {
+    "title": "比賽設定",
+    "name": "比賽名稱",
+    "target": "勝出分數（每場）",
+    "playersTitle": "選手",
+    "playerFormHelp": "用表單管理選手，不需再用純文字貼上。",
+    "playerName": "選手名稱",
+    "playerBey": "陀螺名稱（可選）",
+    "addPlayer": "新增選手",
+    "updatePlayer": "更新選手",
+    "editPlayer": "編輯",
+    "removePlayer": "刪除",
+    "removeConfirm": "刪除此選手，並移除此賽事內相關場次？",
+    "playerLibraryTitle": "歷史選手庫",
+    "playerLibraryHelp": "可重用其他賽事出現過的選手。",
+    "addFromLibrary": "加入已選選手",
+    "saveGoLobby": "儲存並前往大廳"
+  },
+  "lobby": {
+    "title": "大廳",
+    "pick": "選擇兩位選手後開始對戰。",
+    "p1": "選手 1",
+    "p2": "選手 2",
+    "start": "開始對戰",
+    "live": "進行中場次",
+    "resume": "繼續",
+    "stats": "選手數據",
+    "wins": "勝",
+    "losses": "負",
+    "winRate": "勝率",
+    "pts": "得分",
+    "noPlayers": "請先在設定頁加入選手。"
+  },
+  "match": {
+    "back": "返回大廳",
+    "undo": "撤回上一手",
+    "targetHint": "先取得 {n} 分者勝",
+    "finished": "本場已結束",
+    "of": "擊飛勝利",
+    "bf": "擊爆勝利",
+    "xf": "極速位移",
+    "sf": "轉停勝利",
+    "pts": "分"
+  },
+  "history": {
+    "title": "歷史紀錄",
+    "empty": "尚無已結束場次。",
+    "export": "匯出 JSON",
+    "vs": "對",
+    "score": "比分"
+  },
+  "common": {
+    "cancel": "取消",
+    "confirm": "確定",
+    "active": "目前",
+    "replaceDataTitle": "覆寫本機資料？",
+    "replaceDataBody": "匯入將取代此瀏覽器內本 App 儲存的所有資料。",
+    "importFailed": "匯入失敗",
+    "language": "語言"
+  },
+  "errors": {
+    "same_player": "請選擇兩位不同選手。"
+  }
+}

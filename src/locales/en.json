@@ -1,0 +1,87 @@
+{
+  "app": { "title": "BBX Tournament Manager" },
+  "nav": {
+    "home": "Home",
+    "setup": "Setup",
+    "players": "Players",
+    "lobby": "Lobby",
+    "history": "History",
+    "match": "Match"
+  },
+  "home": {
+    "tagline": "Local-first scoring for BBX. No server — your data stays in the browser.",
+    "newTournament": "New tournament",
+    "import": "Import JSON",
+    "importHint": "Load a backup file (.json). Existing data will be replaced after confirmation.",
+    "tournamentList": "Tournament list",
+    "noTournament": "No tournaments yet.",
+    "openTournament": "Open",
+    "deleteTournament": "Delete",
+    "deleteTournamentConfirm": "Delete this tournament? This action cannot be undone.",
+    "goLobby": "Go to lobby",
+    "goSetup": "Continue setup"
+  },
+  "setup": {
+    "title": "Tournament setup",
+    "name": "Tournament name",
+    "target": "Points to win (per match)",
+    "playersTitle": "Players",
+    "playerFormHelp": "Use form fields to manage players. No plain text input needed.",
+    "playerName": "Player name",
+    "playerBey": "Bey name (optional)",
+    "addPlayer": "Add player",
+    "updatePlayer": "Update player",
+    "editPlayer": "Edit",
+    "removePlayer": "Remove",
+    "removeConfirm": "Remove this player and related matches from this tournament?",
+    "playerLibraryTitle": "Player library",
+    "playerLibraryHelp": "Reuse players found in other tournaments.",
+    "addFromLibrary": "Add selected players",
+    "saveGoLobby": "Save & go to lobby"
+  },
+  "lobby": {
+    "title": "Lobby",
+    "pick": "Pick two players, then start a match.",
+    "p1": "Player 1",
+    "p2": "Player 2",
+    "start": "Start match",
+    "live": "Live matches",
+    "resume": "Resume",
+    "stats": "Player stats",
+    "wins": "W",
+    "losses": "L",
+    "winRate": "Win%",
+    "pts": "Pts",
+    "noPlayers": "Add players in Setup first."
+  },
+  "match": {
+    "back": "Back to lobby",
+    "undo": "Undo last",
+    "targetHint": "{n} points to win",
+    "finished": "Match finished",
+    "of": "Over Finish",
+    "bf": "Burst Finish",
+    "xf": "Xtreme Finish",
+    "sf": "Spin Finish",
+    "pts": "pts"
+  },
+  "history": {
+    "title": "History",
+    "empty": "No finished matches yet.",
+    "export": "Export JSON",
+    "vs": "vs",
+    "score": "Score"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "active": "Active",
+    "replaceDataTitle": "Replace local data?",
+    "replaceDataBody": "Importing will replace all data stored in this browser for this app.",
+    "importFailed": "Import failed",
+    "language": "Language"
+  },
+  "errors": {
+    "same_player": "Choose two different players."
+  }
+}

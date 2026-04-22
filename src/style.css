@@ -1,0 +1,11 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-bx-primary: #2e21de;
+  --color-bx-primary-hover: #3b2eeb;
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  @apply min-h-dvh bg-slate-950 text-slate-100 antialiased;
+}
