@@ -102,7 +102,7 @@ const pct = (pid: string) => {
         <h1 class="text-3xl font-black uppercase italic tracking-tighter text-white">
           {{ t('lobby.title') }}
         </h1>
-        <p v-if="!store.hasPlayers" class="text-amber-300/90">{{ t('lobby.noPlayers') }}</p>
+        <p v-if="!store.hasPlayers" class="text-bx-primary/90">{{ t('lobby.noPlayers') }}</p>
         <p v-else class="text-sm text-slate-500">
           {{ store.tournamentName || t('home.unnamedBattle') }} — {{ t('lobby.roundPreparing', { n: currentRound }) }}
         </p>
@@ -126,20 +126,20 @@ const pct = (pid: string) => {
 
     <section v-if="store.hasPlayers" class="group relative">
       <div
-        class="absolute -inset-1 rounded-[2.5rem] bg-linear-to-r from-indigo-500 to-blue-600 opacity-25 blur transition duration-1000 group-hover:opacity-40"
+        class="absolute -inset-1 rounded-[2.5rem] bg-linear-to-r from-bx-primary to-bx-accent opacity-25 blur transition duration-1000 group-hover:opacity-40"
       ></div>
       <div class="relative rounded-4xl border border-white/10 bg-slate-950 p-6 sm:p-8">
         <div class="flex flex-col items-center gap-6 md:flex-row">
           <div class="w-full flex-1 space-y-3">
             <div class="flex items-center justify-between px-2">
-              <span class="text-xs font-black uppercase tracking-widest text-indigo-400">{{ t('lobby.p1') }}</span>
+              <span class="text-xs font-black uppercase tracking-widest text-bx-primary">{{ t('lobby.p1') }}</span>
               <span v-if="p1" class="text-[10px] font-bold text-slate-500">
                 {{ t('lobby.winRate') }}: {{ pct(p1) }}
               </span>
             </div>
             <select
               v-model="p1"
-              class="w-full appearance-none rounded-2xl border-2 border-slate-800 bg-slate-900 px-4 py-4 text-lg font-bold text-white outline-none transition-all focus:border-indigo-500"
+              class="w-full appearance-none rounded-2xl border-2 border-slate-800 bg-slate-900 px-4 py-4 text-lg font-bold text-white outline-none transition-all focus:border-bx-primary"
               @change="syncDistinctPlayers('p1')"
             >
               <option value="" disabled>{{ t('lobby.selectWarrior') }}</option>
@@ -149,7 +149,7 @@ const pct = (pid: string) => {
             </select>
             <button
               type="button"
-              class="w-full rounded-xl border border-indigo-500/40 bg-indigo-500/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-indigo-200 transition hover:bg-indigo-500/20"
+              class="w-full rounded-xl border border-bx-primary/40 bg-bx-primary/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-bx-primary transition hover:bg-bx-primary/20"
               @click="randomP1"
             >
               {{ t('lobby.random') }}
@@ -167,14 +167,14 @@ const pct = (pid: string) => {
 
           <div class="w-full flex-1 space-y-3">
             <div class="flex items-center justify-between px-2">
-              <span class="text-xs font-black uppercase tracking-widest text-blue-400">{{ t('lobby.p2') }}</span>
+              <span class="text-xs font-black uppercase tracking-widest text-bx-primary">{{ t('lobby.p2') }}</span>
               <span v-if="p2" class="text-[10px] font-bold text-slate-500">
                 {{ t('lobby.winRate') }}: {{ pct(p2) }}
               </span>
             </div>
             <select
               v-model="p2"
-              class="w-full appearance-none rounded-2xl border-2 border-slate-800 bg-slate-900 px-4 py-4 text-lg font-bold text-white outline-none transition-all focus:border-blue-500"
+              class="w-full appearance-none rounded-2xl border-2 border-slate-800 bg-slate-900 px-4 py-4 text-lg font-bold text-white outline-none transition-all focus:border-bx-primary"
               @change="syncDistinctPlayers('p2')"
             >
               <option value="" disabled>{{ t('lobby.selectWarrior') }}</option>
@@ -184,7 +184,7 @@ const pct = (pid: string) => {
             </select>
             <button
               type="button"
-              class="w-full rounded-xl border border-blue-500/40 bg-blue-500/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-blue-200 transition hover:bg-blue-500/20"
+              class="w-full rounded-xl border border-bx-primary/40 bg-bx-primary/10 px-4 py-2 text-xs font-bold uppercase tracking-widest text-bx-primary transition hover:bg-bx-primary/20"
               @click="randomP2"
             >
               {{ t('lobby.random') }}
@@ -192,13 +192,13 @@ const pct = (pid: string) => {
           </div>
         </div>
 
-        <p v-if="startError" class="mt-4 animate-pulse text-center text-sm font-bold text-red-500">
+        <p v-if="startError" class="mt-4 animate-pulse text-center text-sm font-bold text-bx-primary">
           {{ startError }}
         </p>
 
         <button
           type="button"
-          class="group relative mt-8 w-full overflow-hidden rounded-2xl bg-white py-4 font-black uppercase italic tracking-tighter text-slate-950 transition-all hover:scale-[1.01] active:scale-[0.98] disabled:opacity-20"
+          class="group relative mt-8 w-full overflow-hidden rounded-2xl bg-bx-primary py-4 font-black uppercase italic tracking-tighter text-black transition-all hover:scale-[1.01] hover:brightness-110 active:scale-[0.98] disabled:opacity-20"
           :disabled="!p1 || !p2"
           @click="start"
         >
@@ -215,8 +215,8 @@ const pct = (pid: string) => {
     <section v-if="store.liveMatches.length" class="space-y-4">
       <div class="flex items-center gap-3">
         <span class="relative flex h-3 w-3">
-          <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
-          <span class="relative inline-flex h-3 w-3 rounded-full bg-red-500"></span>
+          <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-bx-primary opacity-75"></span>
+          <span class="relative inline-flex h-3 w-3 rounded-full bg-bx-primary"></span>
         </span>
         <h2 class="text-sm font-black uppercase tracking-[0.2em] text-white">{{ t('lobby.live') }}</h2>
       </div>
@@ -224,26 +224,26 @@ const pct = (pid: string) => {
         <div
           v-for="m in store.liveMatches"
           :key="m.match_id"
-          class="group flex items-center justify-between rounded-2xl border border-indigo-500/20 bg-indigo-600/10 p-4 transition-all hover:bg-indigo-600/20"
+          class="group flex items-center justify-between rounded-2xl border border-bx-primary/20 bg-bx-primary/10 p-4 transition-all hover:bg-bx-primary/20"
         >
           <div class="flex items-center gap-6">
             <div class="text-right">
               <p class="text-sm font-bold text-white">{{ playerName(m.p1_participant_id) }}</p>
               <p class="text-2xl font-black text-white">{{ m.p1_score }}</p>
             </div>
-            <div class="text-xs font-black text-indigo-500">VS</div>
+            <div class="text-xs font-black text-bx-primary">VS</div>
             <div class="text-left">
               <p class="text-sm font-bold text-white">{{ playerName(m.p2_participant_id) }}</p>
               <p class="text-2xl font-black text-white">{{ m.p2_score }}</p>
             </div>
           </div>
           <div class="flex items-center gap-3">
-            <p v-if="m.logs.length" class="hidden text-xs text-indigo-300/90 sm:block">
+            <p v-if="m.logs.length" class="hidden text-xs text-bx-primary/90 sm:block">
               {{ t('lobby.lastAction') }}: {{ lastActionLabel(m.logs[m.logs.length - 1]!.action) }}
             </p>
             <button
               type="button"
-              class="rounded-xl bg-indigo-600 px-6 py-3 text-xs font-black uppercase tracking-widest text-white transition-all hover:bg-indigo-500"
+              class="rounded-xl bg-bx-primary px-6 py-3 text-xs font-black uppercase tracking-widest text-black transition-all hover:brightness-110"
               @click="resume(m.match_id)"
             >
               {{ t('lobby.resume') }}
@@ -262,7 +262,7 @@ const pct = (pid: string) => {
           class="rounded-2xl border border-slate-800 bg-slate-900/30 p-4 ring-1 ring-white/5"
         >
           <div class="mb-3 flex items-center justify-between">
-            <span class="text-xs font-black uppercase tracking-widest text-indigo-400">#{{ idx + 1 }}</span>
+            <span class="text-xs font-black uppercase tracking-widest text-bx-primary">#{{ idx + 1 }}</span>
             <span class="rounded-lg bg-slate-800 px-2 py-1 text-[10px] font-black text-slate-300">
               {{ pct(pl.id) }}
             </span>
@@ -271,9 +271,9 @@ const pct = (pid: string) => {
           <p class="text-xs text-slate-500">{{ pl.bey_name || t('match.noBey') }}</p>
           <p class="mt-3 text-xs text-slate-400">
             {{ t('lobby.record') }}:
-            <span class="font-bold text-emerald-400">{{ stats.get(pl.id)?.wins ?? 0 }}</span>
+            <span class="font-bold text-bx-primary">{{ stats.get(pl.id)?.wins ?? 0 }}</span>
             /
-            <span class="font-bold text-red-400">{{ stats.get(pl.id)?.losses ?? 0 }}</span>
+            <span class="font-bold text-slate-300">{{ stats.get(pl.id)?.losses ?? 0 }}</span>
           </p>
         </article>
       </div>
@@ -310,12 +310,12 @@ const pct = (pid: string) => {
                 <div class="text-[10px] font-medium text-slate-500">{{ pl.bey_name || '-' }}</div>
               </td>
               <td class="px-4 py-4 text-center tabular-nums">
-                <span class="font-bold text-emerald-400">{{ stats.get(pl.id)?.wins ?? 0 }}</span>
+                <span class="font-bold text-bx-primary">{{ stats.get(pl.id)?.wins ?? 0 }}</span>
                 <span class="mx-1 text-slate-600">/</span>
-                <span class="font-bold text-red-400">{{ stats.get(pl.id)?.losses ?? 0 }}</span>
+                <span class="font-bold text-slate-300">{{ stats.get(pl.id)?.losses ?? 0 }}</span>
               </td>
               <td class="px-4 py-4 text-center">
-                <div class="inline-flex items-center justify-center rounded-lg bg-slate-800 px-3 py-1 text-xs font-black text-indigo-400">
+                <div class="inline-flex items-center justify-center rounded-lg bg-slate-800 px-3 py-1 text-xs font-black text-bx-primary">
                   {{ pct(pl.id) }}
                 </div>
               </td>

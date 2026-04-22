@@ -15,7 +15,7 @@ function onLocale(e: Event) {
 
 <template>
   <div
-    class="min-h-dvh flex flex-col bg-slate-950 text-slate-100 selection:bg-indigo-500/30"
+    class="min-h-dvh flex flex-col bg-bx-dark text-slate-100 selection:bg-bx-primary/30 selection:text-black"
   >
     <header
       class="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/80 backdrop-blur-md"
@@ -23,12 +23,12 @@ function onLocale(e: Event) {
       <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <RouterLink to="/" class="group flex items-center gap-2">
           <div
-            class="flex h-8 w-8 items-center justify-center rounded bg-linear-to-br from-indigo-600 to-blue-700 font-bold text-white shadow-lg shadow-indigo-500/20"
+            class="flex h-8 w-8 items-center justify-center rounded bg-bx-primary font-bold text-black shadow-lg shadow-bx-primary/20"
           >
             X
           </div>
           <span
-            class="text-lg font-bold tracking-tighter text-white transition-colors group-hover:text-indigo-400"
+            class="text-lg font-bold tracking-tighter text-white transition-colors group-hover:text-bx-primary"
           >
             {{ t('app.title') }}
           </span>
@@ -53,12 +53,12 @@ function onLocale(e: Event) {
 
           <div class="relative">
             <select
-              class="appearance-none rounded-lg border border-slate-700 bg-slate-900 py-1.5 pl-3 pr-8 text-xs font-medium text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              class="appearance-none rounded-lg border border-slate-700 bg-slate-900 py-1.5 pl-3 pr-8 text-xs font-medium text-slate-300 focus:outline-none focus:ring-2 focus:ring-bx-primary"
               :value="locale"
               @change="onLocale"
             >
               <option value="en">EN</option>
-              <option value="zh">繁中</option>
+              <option value="zh">ZH</option>
             </select>
             <div
               class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500"

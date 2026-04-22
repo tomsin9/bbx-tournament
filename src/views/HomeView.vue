@@ -73,7 +73,7 @@ function removeTournament(id: string) {
   <div class="mx-auto max-w-3xl space-y-10 pb-12">
     <header class="space-y-3 py-6 text-center">
       <div
-        class="inline-block rounded-full bg-indigo-500/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-indigo-400"
+        class="inline-block rounded-full bg-bx-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-bx-primary"
       >
         Beyblade X Manager
       </div>
@@ -92,7 +92,7 @@ function removeTournament(id: string) {
         @click="onNewTournament"
       >
         <div
-          class="flex h-16 w-16 items-center justify-center rounded-2xl bg-bx-primary text-white shadow-lg shadow-bx-primary/20 transition-transform group-hover:scale-110"
+          class="flex h-16 w-16 items-center justify-center rounded-2xl bg-bx-primary text-black shadow-lg shadow-bx-primary/20 transition-transform group-hover:scale-110"
         >
           <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
@@ -130,15 +130,15 @@ function removeTournament(id: string) {
 
     <section
       v-else
-      class="relative overflow-hidden rounded-3xl bg-indigo-600 p-1 shadow-2xl shadow-indigo-900/20"
+      class="relative overflow-hidden rounded-3xl bg-bx-primary p-1 shadow-2xl shadow-bx-primary/20"
     >
       <div
         class="relative flex flex-col justify-between gap-6 rounded-[22px] bg-slate-950 p-6 sm:flex-row sm:items-center"
       >
         <div class="space-y-3">
           <div class="flex items-center gap-2">
-            <span class="flex h-2 w-2 animate-ping rounded-full bg-red-500"></span>
-            <p class="text-xs font-bold uppercase tracking-widest text-indigo-400">
+            <span class="flex h-2 w-2 animate-ping rounded-full bg-bx-primary"></span>
+            <p class="text-xs font-bold uppercase tracking-widest text-bx-primary">
               {{ t('home.currentTournament') }}
             </p>
           </div>
@@ -152,7 +152,7 @@ function removeTournament(id: string) {
         </div>
         <button
           type="button"
-          class="flex items-center justify-center gap-2 rounded-2xl bg-white px-8 py-4 font-bold text-indigo-950 transition hover:bg-indigo-50 active:scale-95"
+          class="flex items-center justify-center gap-2 rounded-2xl bg-bx-primary px-8 py-4 font-bold text-black transition hover:brightness-110 active:scale-95"
           @click="continueCurrentTournament"
         >
           {{ t('home.continueCurrentMatch') }}
@@ -166,7 +166,7 @@ function removeTournament(id: string) {
     <section v-if="hasCurrentTournament" class="grid gap-3 sm:grid-cols-3">
       <button
         type="button"
-        class="rounded-2xl border border-bx-primary/40 bg-bx-primary/10 px-5 py-3 text-sm font-semibold text-indigo-200 transition hover:bg-bx-primary/20"
+        class="rounded-2xl border border-bx-primary/40 bg-bx-primary/10 px-5 py-3 text-sm font-semibold text-bx-primary transition hover:bg-bx-primary/20"
         @click="onNewTournament"
       >
         {{ t('home.createNewTournament') }}
@@ -191,7 +191,7 @@ function removeTournament(id: string) {
       {{ t('home.importHint') }}
     </p>
 
-    <p v-if="importError" class="text-sm text-red-400" role="alert">
+    <p v-if="importError" class="text-sm text-bx-primary" role="alert">
       {{ t('common.importFailed') }}: {{ importError }}
     </p>
 
@@ -213,7 +213,7 @@ function removeTournament(id: string) {
           <div class="min-w-0 space-y-1">
             <p class="truncate font-bold text-slate-200 transition-colors group-hover:text-white">
               {{ item.name }}
-              <span v-if="item.isActive" class="ml-2 text-[10px] uppercase text-indigo-400">
+              <span v-if="item.isActive" class="ml-2 text-[10px] uppercase text-bx-primary">
                 ● {{ t('common.active') }}
               </span>
             </p>
@@ -242,7 +242,7 @@ function removeTournament(id: string) {
             </button>
             <button
               type="button"
-              class="p-2 text-slate-600 hover:text-red-400 disabled:opacity-0"
+              class="p-2 text-slate-600 hover:text-bx-primary disabled:opacity-0"
               @click="removeTournament(item.id)"
             >
               <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

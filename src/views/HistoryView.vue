@@ -56,7 +56,7 @@ function formatTimestamp(ts: string) {
 function actionBadgeClass(action: string) {
   const normalized = action.toLowerCase()
   if (normalized.includes('xtreme')) return 'bg-bx-primary/15 text-bx-primary ring-bx-primary/30'
-  if (normalized.includes('burst')) return 'bg-fuchsia-400/15 text-fuchsia-300 ring-fuchsia-400/30'
+  if (normalized.includes('burst')) return 'bg-bx-primary/15 text-bx-primary ring-bx-primary/30'
   if (normalized.includes('over')) return 'bg-bx-accent/15 text-bx-accent ring-bx-accent/30'
   return 'bg-slate-700/30 text-slate-300 ring-slate-600/40'
 }

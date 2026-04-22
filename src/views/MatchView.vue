@@ -97,10 +97,10 @@ watch(
 
     <div class="grid h-full grid-cols-2 gap-2 sm:gap-6">
       <section
-        class="relative flex flex-col gap-4 rounded-[2.5rem] bg-linear-to-b from-red-600/20 to-slate-900/90 p-4 ring-2 ring-red-500/20 transition-all"
+        class="relative flex flex-col gap-4 rounded-[2.5rem] bg-linear-to-b from-bx-primary/20 to-slate-900/90 p-4 ring-2 ring-bx-primary/20 transition-all"
         :class="
           match.p1_score >= match.target_points
-            ? 'z-10 scale-[1.02] ring-red-500 shadow-[0_0_50px_rgba(239,68,68,0.3)]'
+            ? 'z-10 scale-[1.02] ring-bx-primary shadow-[0_0_50px_rgba(162,255,31,0.3)]'
             : ''
         "
       >
@@ -108,7 +108,7 @@ watch(
           <h2 class="truncate text-lg font-black uppercase italic tracking-tighter text-white">
             {{ p1.name }}
           </h2>
-          <div class="text-[10px] font-bold uppercase tracking-widest text-red-400/80">
+          <div class="text-[10px] font-bold uppercase tracking-widest text-bx-primary/80">
             {{ p1.bey_name || t('match.noBey') }}
           </div>
         </div>
@@ -128,16 +128,16 @@ watch(
             type="button"
             class="group relative flex flex-col items-center justify-center overflow-hidden rounded-2xl py-4 transition-all active:scale-95 disabled:grayscale disabled:opacity-20"
             :class="[
-              a.key === 'Xtreme Finish' ? 'h-24 bg-red-600' : 'h-20 bg-slate-800',
+              a.key === 'Xtreme Finish' ? 'h-24 bg-bx-primary' : 'h-20 bg-slate-800',
               'hover:brightness-110',
             ]"
             :disabled="match.status !== 'live'"
             @click="score(p1.id, a.key)"
           >
-            <span class="relative z-10 text-xs font-black uppercase italic tracking-tighter text-white">
+            <span class="relative z-10 text-xs font-black uppercase italic tracking-tighter text-black">
               {{ t(a.labelKey) }}
             </span>
-            <span class="relative z-10 text-xl font-black text-white/90">
+            <span class="relative z-10 text-xl font-black text-black/90">
               +{{ FINISH_POINTS[a.key] }}
             </span>
             <div
@@ -149,10 +149,10 @@ watch(
       </section>
 
       <section
-        class="relative flex flex-col gap-4 rounded-[2.5rem] bg-linear-to-b from-blue-600/20 to-slate-900/90 p-4 ring-2 ring-blue-500/20 transition-all"
+        class="relative flex flex-col gap-4 rounded-[2.5rem] bg-linear-to-b from-bx-primary/20 to-slate-900/90 p-4 ring-2 ring-bx-primary/20 transition-all"
         :class="
           match.p2_score >= match.target_points
-            ? 'z-10 scale-[1.02] ring-blue-500 shadow-[0_0_50px_rgba(59,130,246,0.3)]'
+            ? 'z-10 scale-[1.02] ring-bx-primary shadow-[0_0_50px_rgba(162,255,31,0.3)]'
             : ''
         "
       >
@@ -160,7 +160,7 @@ watch(
           <h2 class="truncate text-lg font-black uppercase italic tracking-tighter text-white">
             {{ p2.name }}
           </h2>
-          <div class="text-[10px] font-bold uppercase tracking-widest text-blue-400/80">
+          <div class="text-[10px] font-bold uppercase tracking-widest text-bx-primary/80">
             {{ p2.bey_name || t('match.noBey') }}
           </div>
         </div>
@@ -180,16 +180,16 @@ watch(
             type="button"
             class="group relative flex flex-col items-center justify-center overflow-hidden rounded-2xl py-4 transition-all active:scale-95 disabled:grayscale disabled:opacity-20"
             :class="[
-              a.key === 'Xtreme Finish' ? 'h-24 bg-blue-600' : 'h-20 bg-slate-800',
+              a.key === 'Xtreme Finish' ? 'h-24 bg-bx-primary' : 'h-20 bg-slate-800',
               'hover:brightness-110',
             ]"
             :disabled="match.status !== 'live'"
             @click="score(p2.id, a.key)"
           >
-            <span class="relative z-10 text-xs font-black uppercase italic tracking-tighter text-white">
+            <span class="relative z-10 text-xs font-black uppercase italic tracking-tighter text-black">
               {{ t(a.labelKey) }}
             </span>
-            <span class="relative z-10 text-xl font-black text-white/90">
+            <span class="relative z-10 text-xl font-black text-black/90">
               +{{ FINISH_POINTS[a.key] }}
             </span>
             <div
@@ -206,7 +206,7 @@ watch(
         v-if="match.status === 'finished'"
         class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/80 px-6 text-center backdrop-blur-md"
       >
-        <div class="mb-4 text-xs font-black uppercase tracking-[0.3em] text-indigo-400">
+        <div class="mb-4 text-xs font-black uppercase tracking-[0.3em] text-bx-primary">
           {{ t('match.battleResult') }}
         </div>
         <h3 class="mb-2 text-6xl font-black uppercase italic tracking-tighter text-white">
@@ -217,7 +217,7 @@ watch(
         </p>
         <button
           type="button"
-          class="rounded-2xl bg-white px-12 py-4 font-black uppercase tracking-widest text-slate-950 shadow-xl"
+          class="rounded-2xl bg-bx-primary px-12 py-4 font-black uppercase tracking-widest text-black shadow-xl"
           @click="back"
         >
           {{ t('match.returnToLobby') }}

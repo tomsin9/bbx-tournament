@@ -1,8 +1,10 @@
 import type {
+  BattleFormat,
   BxTmState,
   FinishAction,
   Match,
   MatchLogEntry,
+  StadiumType,
   TournamentParticipant,
 } from '@/types/bxtm'
 import { APP_VERSION, FINISH_POINTS, emptyState } from '@/types/bxtm'
@@ -13,6 +15,24 @@ const FINISH_ACTIONS = new Set<FinishAction>([
   'Xtreme Finish',
   'Spin Finish',
 ])
+const BATTLE_FORMATS = new Set<BattleFormat>(['singles', 'doubles'])
+const STADIUM_TYPES = new Set<StadiumType>([
+  'xtreme_standard',
+  'infinity',
+  'electric',
+  'three_player',
+  'custom',
+])
+
+function coerceBattleFormat(v: unknown): BattleFormat {
+  return typeof v === 'string' && BATTLE_FORMATS.has(v as BattleFormat) ? (v as BattleFormat) : 'singles'
+}
+
+function coerceStadiumType(v: unknown): StadiumType {
+  return typeof v === 'string' && STADIUM_TYPES.has(v as StadiumType)
+    ? (v as StadiumType)
+    : 'xtreme_standard'
+}
 
 export type ParseResult =
   | { ok: true; data: BxTmState }
@@ -150,6 +170,8 @@ export function parseBxTmJson(text: string): ParseResult {
     app_version: version,
     tournament_name: root.tournament_name,
     target_points: root.target_points,
+    battle_format: coerceBattleFormat(root.battle_format),
+    stadium_type: coerceStadiumType(root.stadium_type),
     participants,
     matches,
   }
@@ -220,6 +242,8 @@ export function normalizeImportedState(raw: unknown): ParseResult {
       app_version: typeof root.app_version === 'string' ? root.app_version : APP_VERSION,
       tournament_name: typeof root.tournament_name === 'string' ? root.tournament_name : '',
       target_points: defaultTarget,
+      battle_format: coerceBattleFormat(root.battle_format),
+      stadium_type: coerceStadiumType(root.stadium_type),
       participants,
       matches,
     }

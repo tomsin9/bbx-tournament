@@ -1,10 +1,12 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import type {
+  BattleFormat,
   BxTmState,
   FinishAction,
   Match,
   PlayerProfile,
+  StadiumType,
   TournamentParticipant,
   TournamentRecord,
 } from '@/types/bxtm'
@@ -109,6 +111,18 @@ export const useTournamentStore = defineStore('tournament', () => {
       state.value.target_points = Math.max(1, Math.floor(v))
     },
   })
+  const battleFormat = computed({
+    get: () => state.value.battle_format,
+    set: (v: BattleFormat) => {
+      state.value.battle_format = v
+    },
+  })
+  const stadiumType = computed({
+    get: () => state.value.stadium_type,
+    set: (v: StadiumType) => {
+      state.value.stadium_type = v
+    },
+  })
 
   const hasPlayers = computed(() => state.value.participants.length > 0)
   const playerLibrary = computed(() =>
@@ -149,12 +163,16 @@ export const useTournamentStore = defineStore('tournament', () => {
   function applySetup(payload: {
     tournamentName: string
     targetPoints: number
+    battleFormat: BattleFormat
+    stadiumType: StadiumType
     players: TournamentParticipant[]
   }) {
     updateState((s) => ({
       ...s,
       tournament_name: payload.tournamentName.trim(),
       target_points: Math.max(1, Math.floor(payload.targetPoints)),
+      battle_format: payload.battleFormat,
+      stadium_type: payload.stadiumType,
       participants: payload.players,
     }))
   }
@@ -369,6 +387,8 @@ export const useTournamentStore = defineStore('tournament', () => {
     tournamentList,
     tournamentName,
     targetPoints,
+    battleFormat,
+    stadiumType,
     hasPlayers,
     playerLibrary,
     liveMatches,

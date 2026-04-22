@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import type { TournamentParticipant } from '@/types/bxtm'
+import type { BattleFormat, StadiumType, TournamentParticipant } from '@/types/bxtm'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useTournamentStore } from '@/stores/tournament'
@@ -12,6 +12,8 @@ store.hydrate()
 
 const name = ref(store.tournamentName || '')
 const target = ref(store.targetPoints)
+const battleFormat = ref<BattleFormat>(store.battleFormat)
+const stadiumType = ref<StadiumType>(store.stadiumType)
 const playerName = ref('')
 const playerBey = ref('')
 const editingId = ref<string | null>(null)
@@ -32,6 +34,8 @@ const selectedLibraryPlayers = computed(() => {
 onMounted(() => {
   name.value = store.tournamentName
   target.value = store.targetPoints
+  battleFormat.value = store.battleFormat
+  stadiumType.value = store.stadiumType
 })
 
 function libKey(p: { id: string }) {
@@ -90,6 +94,8 @@ function save() {
   store.applySetup({
     tournamentName: name.value,
     targetPoints: target.value,
+    battleFormat: battleFormat.value,
+    stadiumType: stadiumType.value,
     players: store.players,
   })
   void router.push('/lobby')
@@ -111,7 +117,7 @@ function save() {
         class="flex-1 rounded-xl py-3 text-sm font-bold uppercase tracking-widest transition-all duration-200"
         :class="
           activeTab === 'rules'
-            ? 'scale-[1.02] bg-bx-primary text-white shadow-lg shadow-indigo-500/20'
+            ? 'scale-[1.02] bg-bx-primary text-black shadow-lg shadow-bx-primary/20'
             : 'text-slate-500 hover:text-slate-300'
         "
         @click="activeTab = 'rules'"
@@ -123,7 +129,7 @@ function save() {
         class="flex-1 rounded-xl py-3 text-sm font-bold uppercase tracking-widest transition-all duration-200"
         :class="
           activeTab === 'players'
-            ? 'scale-[1.02] bg-bx-primary text-white shadow-lg shadow-indigo-500/20'
+            ? 'scale-[1.02] bg-bx-primary text-black shadow-lg shadow-bx-primary/20'
             : 'text-slate-500 hover:text-slate-300'
         "
         @click="activeTab = 'players'"
@@ -160,6 +166,55 @@ function save() {
           <span class="min-w-12 text-center text-2xl font-black text-bx-primary">{{ target }}</span>
         </div>
       </div>
+
+      <div class="group space-y-2">
+        <label class="text-xs font-black uppercase tracking-widest text-slate-500 transition-colors group-focus-within:text-bx-primary">
+          {{ t('setup.format') }}
+        </label>
+        <div class="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            class="rounded-xl border px-4 py-3 text-sm font-bold uppercase tracking-widest transition-all"
+            :class="
+              battleFormat === 'singles'
+                ? 'border-bx-primary bg-bx-primary text-black'
+                : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-bx-primary/60'
+            "
+            @click="battleFormat = 'singles'"
+          >
+            {{ t('setup.formatSingles') }}
+          </button>
+          <button
+            type="button"
+            class="rounded-xl border px-4 py-3 text-sm font-bold uppercase tracking-widest transition-all"
+            :class="
+              battleFormat === 'doubles'
+                ? 'border-bx-primary bg-bx-primary text-black'
+                : 'border-slate-700 bg-slate-900 text-slate-500 opacity-50'
+            "
+            disabled
+            @click="battleFormat = 'doubles'"
+          >
+            {{ t('setup.formatDoubles') }}
+          </button>
+        </div>
+      </div>
+
+      <div class="group space-y-2">
+        <label class="text-xs font-black uppercase tracking-widest text-slate-500 transition-colors group-focus-within:text-bx-primary">
+          {{ t('setup.stadium') }}
+        </label>
+        <select
+          v-model="stadiumType"
+          class="w-full rounded-2xl border-2 border-slate-800 bg-slate-900 px-4 py-3 text-sm font-bold text-slate-200 transition-all focus:border-bx-primary focus:outline-none"
+        >
+          <option value="xtreme_standard">{{ t('setup.stadiumXtremeStandard') }}</option>
+          <option value="infinity">{{ t('setup.stadiumInfinity') }}</option>
+          <option value="electric">{{ t('setup.stadiumElectric') }}</option>
+          <option value="three_player">{{ t('setup.stadiumThreePlayer') }}</option>
+          <option value="custom">{{ t('setup.stadiumCustom') }}</option>
+        </select>
+      </div>
     </section>
 
     <section v-else class="space-y-8">
@@ -183,7 +238,7 @@ function save() {
         </div>
         <button
           type="button"
-          class="w-full rounded-xl bg-white py-4 font-black uppercase tracking-tighter text-slate-950 transition-all hover:bg-indigo-50 active:scale-95 disabled:opacity-20"
+          class="w-full rounded-xl bg-bx-primary py-4 font-black uppercase tracking-tighter text-black transition-all hover:brightness-110 active:scale-95 disabled:opacity-20"
           :disabled="!canAddPlayer"
           @click="submitPlayer"
         >
@@ -223,7 +278,7 @@ function save() {
               </div>
               <div>
                 <p class="font-bold text-white">{{ p.name }}</p>
-                <p class="text-xs font-medium text-indigo-400/80">
+                <p class="text-xs font-medium text-bx-primary/80">
                   {{ p.bey_name || t('setup.noBeyRecorded') }}
                 </p>
               </div>
@@ -239,7 +294,7 @@ function save() {
                   />
                 </svg>
               </button>
-              <button type="button" class="p-2 text-slate-600 hover:text-red-400" @click="removePlayer(p.id)">
+              <button type="button" class="p-2 text-slate-600 hover:text-bx-primary" @click="removePlayer(p.id)">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path
                     stroke-linecap="round"
@@ -288,7 +343,7 @@ function save() {
     >
       <button
         type="button"
-        class="group relative inline-flex items-center justify-center gap-3 overflow-hidden rounded-2xl bg-bx-primary px-12 py-4 text-lg font-black uppercase italic tracking-tighter text-white shadow-2xl shadow-indigo-500/40 transition-all hover:scale-105 active:scale-95 disabled:grayscale disabled:opacity-50"
+        class="group relative inline-flex items-center justify-center gap-3 overflow-hidden rounded-2xl bg-bx-primary px-12 py-4 text-lg font-black uppercase italic tracking-tighter text-black shadow-2xl shadow-bx-primary/40 transition-all hover:scale-105 active:scale-95 disabled:grayscale disabled:opacity-50"
         :disabled="!canSave"
         @click="save"
       >

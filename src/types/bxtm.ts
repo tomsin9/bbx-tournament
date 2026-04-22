@@ -42,10 +42,21 @@ export interface Match {
   winner_participant_id?: string
 }
 
+export type BattleFormat = 'singles' | 'doubles'
+
+export type StadiumType =
+  | 'xtreme_standard'
+  | 'infinity'
+  | 'electric'
+  | 'three_player'
+  | 'custom'
+
 export interface BxTmState {
   app_version: string
   tournament_name: string
   target_points: number
+  battle_format: BattleFormat
+  stadium_type: StadiumType
   participants: TournamentParticipant[]
   matches: Match[]
 }
@@ -78,6 +89,8 @@ export function emptyState(): BxTmState {
     app_version: APP_VERSION,
     tournament_name: '',
     target_points: 4,
+    battle_format: 'singles',
+    stadium_type: 'xtreme_standard',
     participants: [],
     matches: [],
   }
