@@ -1,6 +1,6 @@
-# Beyblade X Tournament Manager
+# BBX Tournament Manager
 
-A lightweight Vue 3 web app for managing Beyblade X tournaments, including player setup, match flow, and history tracking.
+A lightweight Vue 3 web app for managing BBX tournaments, including player setup, match flow, and history tracking.
 
 ## Live Demo
 
