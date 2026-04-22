@@ -127,14 +127,20 @@
     "vs": "vs",
     "score": "Score",
     "winner": "Winner: {name}",
-    "matchDetails": "Match Details"
+    "matchDetails": "Match Details",
+    "actions": {
+      "sf": "Spin Finish",
+      "of": "Over Finish",
+      "bf": "Burst Finish",
+      "xf": "Xtreme Finish"
+    }
   },
   "players": {
     "registry": "Player Registry",
     "registered": "Registered",
     "registerPlayer": "Register Player",
     "noPlayersReady": "No Players Ready",
-    "stockBey": "Stock Bey",
+    "stockBey": "No Bey specified",
     "availableCount": "{n} Available",
     "editLibraryPlayer": "Edit Library Player",
     "saveLibraryPlayer": "Save Library Player",

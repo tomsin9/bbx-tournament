@@ -2,7 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import { useTournamentStore } from '@/stores/tournament'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const store = useTournamentStore()
 store.hydrate()
 
@@ -26,6 +26,9 @@ function winnerName(match: {
 function formatTimestamp(ts: string) {
   const date = new Date(ts)
   if (Number.isNaN(date.getTime())) return ts
+  const activeLocale = locale.value?.toLowerCase().startsWith('zh')
+    ? 'zh-Hant-HK'
+    : (locale.value || undefined)
 
   const now = Date.now()
   const diffMs = date.getTime() - now
@@ -33,7 +36,7 @@ function formatTimestamp(ts: string) {
   const minuteMs = 60 * 1000
   const hourMs = 60 * minuteMs
   const dayMs = 24 * hourMs
-  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' })
+  const rtf = new Intl.RelativeTimeFormat(activeLocale, { numeric: 'auto' })
 
   if (absMs < hourMs) {
     return rtf.format(Math.round(diffMs / minuteMs), 'minute')
@@ -45,7 +48,7 @@ function formatTimestamp(ts: string) {
     return rtf.format(Math.round(diffMs / dayMs), 'day')
   }
 
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat(activeLocale, {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
@@ -53,20 +56,34 @@ function formatTimestamp(ts: string) {
   }).format(date)
 }
 
+function normalizeAction(action: string) {
+  return action.trim().toLowerCase()
+}
+
+function actionType(action: string): 'xf' | 'bf' | 'of' | 'sf' | 'other' {
+  const normalized = normalizeAction(action)
+  if (normalized.includes('xtreme') || normalized === 'xf') return 'xf'
+  if (normalized.includes('burst') || normalized === 'bf') return 'bf'
+  if (normalized.includes('over') || normalized === 'of') return 'of'
+  if (normalized.includes('spin') || normalized === 'sf') return 'sf'
+  return 'other'
+}
+
 function actionBadgeClass(action: string) {
-  const normalized = action.toLowerCase()
-  if (normalized.includes('xtreme')) return 'bg-bx-primary/15 text-bx-primary ring-bx-primary/30'
-  if (normalized.includes('burst')) return 'bg-bx-primary/15 text-bx-primary ring-bx-primary/30'
-  if (normalized.includes('over')) return 'bg-bx-accent/15 text-bx-accent ring-bx-accent/30'
+  const type = actionType(action)
+  if (type === 'xf' || type === 'bf') return 'bg-bx-primary/15 text-bx-primary ring-bx-primary/30'
+  if (type === 'of') return 'bg-bx-accent/15 text-bx-accent ring-bx-accent/30'
+  if (type === 'sf') return 'bg-emerald-400/15 text-emerald-300 ring-emerald-300/30'
   return 'bg-slate-700/30 text-slate-300 ring-slate-600/40'
 }
 
 function actionBadgeLabel(action: string) {
-  const normalized = action.toLowerCase()
-  if (normalized.includes('xtreme')) return 'XTREME'
-  if (normalized.includes('burst')) return 'BURST'
-  if (normalized.includes('over')) return 'OVER'
-  return action.toUpperCase()
+  const type = actionType(action)
+  if (type === 'xf') return t('history.actions.xf')
+  if (type === 'bf') return t('history.actions.bf')
+  if (type === 'of') return t('history.actions.of')
+  if (type === 'sf') return t('history.actions.sf')
+  return action
 }
 
 function downloadExport() {

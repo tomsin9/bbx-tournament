@@ -127,14 +127,20 @@
     "vs": "對",
     "score": "比分",
     "winner": "勝方：{name}",
-    "matchDetails": "對戰詳情"
+    "matchDetails": "對戰詳情",
+    "actions": {
+      "sf": "轉停勝利",
+      "of": "擊飛勝利",
+      "bf": "爆裂勝利",
+      "xf": "極限勝利"
+    }
   },
   "players": {
     "registry": "選手登錄",
     "registered": "已登錄",
     "registerPlayer": "登錄選手",
     "noPlayersReady": "尚未有可出戰選手",
-    "stockBey": "原廠陀螺",
+    "stockBey": "未指定陀螺",
     "availableCount": "{n} 位可用",
     "editLibraryPlayer": "編輯選手庫選手",
     "saveLibraryPlayer": "儲存選手庫選手",
