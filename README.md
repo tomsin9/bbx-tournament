@@ -84,5 +84,4 @@ This repository includes `.github/workflows/deploy.yml` for automatic deployment
 - `npm run test` - run tests
 
 ## License
-
-MIT
+This project is licensed under the MIT License. See `LICENSE.md` for details.
