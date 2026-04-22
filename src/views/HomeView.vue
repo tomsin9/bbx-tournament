@@ -95,7 +95,7 @@ function removeTournament(id: string) {
       <div
         class="inline-block rounded-full bg-bx-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-bx-primary"
       >
-        BBX Tournament Manager
+        BBX Tournament System
       </div>
       <h1 class="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
         {{ t('app.title') }}
