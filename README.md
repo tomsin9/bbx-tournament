@@ -6,7 +6,7 @@ A lightweight Vue 3 web app for managing Beyblade X tournaments, including playe
 
 After GitHub Pages deployment is enabled, the site will be available at:
 
-`https://<your-github-username>.github.io/beybladex_tournament_manager/`
+`https://tomsin9.github.io/bbx-tournament/`
 
 ## Features
 
