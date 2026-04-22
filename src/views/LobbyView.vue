@@ -29,6 +29,12 @@ const rankedPlayers = computed(() =>
   }),
 )
 const topPlayers = computed(() => rankedPlayers.value.slice(0, 3))
+const podiumBgClasses = [
+  'bg-amber-300/12 ring-amber-300/30 border-amber-300/35',
+  'bg-slate-300/10 ring-slate-300/30 border-slate-300/30',
+  'bg-orange-400/10 ring-orange-400/30 border-orange-400/30',
+]
+const podiumNameClasses = ['text-amber-300', 'text-slate-200', 'text-orange-300']
 
 function playerName(pid: string) {
   return store.playerById(pid)?.name ?? pid
@@ -259,7 +265,8 @@ const pct = (pid: string) => {
         <article
           v-for="(pl, idx) in topPlayers"
           :key="pl.id"
-          class="rounded-2xl border border-slate-800 bg-slate-900/30 p-4 ring-1 ring-white/5"
+          class="rounded-2xl border bg-slate-900/30 p-4 ring-1"
+          :class="podiumBgClasses[idx] ?? 'border-slate-800 ring-white/5'"
         >
           <div class="mb-3 flex items-center justify-between">
             <span class="text-xs font-black uppercase tracking-widest text-bx-primary">#{{ idx + 1 }}</span>
@@ -267,13 +274,18 @@ const pct = (pid: string) => {
               {{ pct(pl.id) }}
             </span>
           </div>
-          <p class="truncate font-bold text-white">{{ pl.name }}</p>
+          <p
+            class="truncate font-bold"
+            :class="podiumNameClasses[idx] ?? 'text-white'"
+          >
+            {{ pl.name }}
+          </p>
           <p class="text-xs text-slate-500">{{ pl.bey_name || t('match.noBey') }}</p>
           <p class="mt-3 text-xs text-slate-400">
             {{ t('lobby.record') }}:
             <span class="font-bold text-bx-primary">{{ stats.get(pl.id)?.wins ?? 0 }}</span>
             /
-            <span class="font-bold text-slate-300">{{ stats.get(pl.id)?.losses ?? 0 }}</span>
+            <span class="font-bold text-red-400">{{ stats.get(pl.id)?.losses ?? 0 }}</span>
           </p>
         </article>
       </div>
@@ -301,18 +313,32 @@ const pct = (pid: string) => {
           </thead>
           <tbody class="divide-y divide-slate-800/50">
             <tr
-              v-for="pl in rankedPlayers"
+              v-for="(pl, idx) in rankedPlayers"
               :key="pl.id"
-              class="transition-colors hover:bg-white/2"
+              class="transition-colors"
+              :class="
+                idx === 0
+                  ? 'bg-amber-300/12 hover:bg-amber-300/12'
+                  : idx === 1
+                    ? 'bg-slate-300/10 hover:bg-slate-300/10'
+                    : idx === 2
+                      ? 'bg-orange-400/10 hover:bg-orange-400/10'
+                      : 'hover:bg-white/2'
+              "
             >
               <td class="px-6 py-4">
-                <div class="font-bold text-white">{{ pl.name }}</div>
+                <div
+                  class="font-bold"
+                  :class="podiumNameClasses[idx] ?? 'text-white'"
+                >
+                  {{ pl.name }}
+                </div>
                 <div class="text-[10px] font-medium text-slate-500">{{ pl.bey_name || '-' }}</div>
               </td>
               <td class="px-4 py-4 text-center tabular-nums">
                 <span class="font-bold text-bx-primary">{{ stats.get(pl.id)?.wins ?? 0 }}</span>
                 <span class="mx-1 text-slate-600">/</span>
-                <span class="font-bold text-slate-300">{{ stats.get(pl.id)?.losses ?? 0 }}</span>
+                <span class="font-bold text-red-400">{{ stats.get(pl.id)?.losses ?? 0 }}</span>
               </td>
               <td class="px-4 py-4 text-center">
                 <div class="inline-flex items-center justify-center rounded-lg bg-slate-800 px-3 py-1 text-xs font-black text-bx-primary">

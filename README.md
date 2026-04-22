@@ -1,22 +1,24 @@
-# BBX Tournament Manager
+# Beyblade X Tournament Manager
 
-A lightweight Vue 3 web app for managing BBX tournaments, including player setup, match flow, and history tracking.
+A web-based tournament management application built with Vue 3 for Beyblade X events.  
+It supports the full event flow from participant setup to match progression, history tracking, and data portability.
 
 ## Live Demo
 
-After GitHub Pages deployment is enabled, the site will be available at:
+After GitHub Pages is enabled, the application is available at:
 
-`https://tomsin9.github.io/bbx-tournament/`
+`https://tomsin9.github.io/beybladex_tournament_manager/`
 
-## Features
+## Core Features
 
-- Tournament setup and player management
-- Match progression and lobby flow
-- Match history view
-- Localization support (`en` / `zh`)
-- Export and import tournament data
+- **Tournament setup**: Configure event parameters and initialize tournament sessions.
+- **Player management**: Add, edit, and organize participants before and during an event.
+- **Match flow control**: Manage match progression and lobby states in a structured workflow.
+- **Match history**: Review completed matches and event records.
+- **Localization**: Built-in internationalization support for English and Chinese (`en` / `zh`).
+- **Data export/import**: Back up and restore tournament data for portability and continuity.
 
-## Tech Stack
+## Technology Stack
 
 - Vue 3
 - TypeScript
@@ -26,62 +28,68 @@ After GitHub Pages deployment is enabled, the site will be available at:
 - Vue I18n
 - Tailwind CSS
 
-## Local Development
+## Getting Started
 
-### 1) Install dependencies
+### Prerequisites
+
+- Node.js 18+ (recommended)
+- npm 9+ (recommended)
+
+### Install dependencies
 
 ```bash
 npm install
 ```
 
-### 2) Start development server
+### Start development server
 
 ```bash
 npm run dev
 ```
 
-### 3) Build for production
+### Build for production
 
 ```bash
 npm run build
 ```
 
-### 4) Preview production build
+### Preview production build locally
 
 ```bash
 npm run preview
 ```
 
-## Deploy to GitHub Pages
+## Deployment (GitHub Pages)
 
-This repository includes `.github/workflows/deploy.yml` for automatic deployment.
+This repository includes a CI workflow at `.github/workflows/deploy.yml` for automated deployment.
 
-### One-time setup
+### One-time repository setup
 
 1. Push this project to a GitHub repository named `beybladex_tournament_manager`.
 2. Go to `Settings -> Pages`.
 3. Set `Source` to **GitHub Actions**.
 
-### Deployment flow
+### Deployment behavior
 
-- Every push to `main` triggers:
-  - dependency installation
-  - production build
-  - deployment of `dist/` to GitHub Pages
+Each push to `main` triggers:
 
-## Important Notes
+1. Dependency installation
+2. Production build
+3. Deployment of `dist/` to GitHub Pages
 
-- `vite.config.ts` is configured with:
-  - `base: '/beybladex_tournament_manager/'`
-- Router is configured with `createWebHashHistory(...)` to avoid 404 issues on page refresh in GitHub Pages.
-- If you rename the repository, update the `base` path in `vite.config.ts` accordingly.
+## Configuration Notes
 
-## Scripts
+- `vite.config.ts` uses `base: '/beybladex_tournament_manager/'` for GitHub Pages hosting.
+- The router uses `createWebHashHistory(...)` to prevent refresh-related 404 issues on GitHub Pages.
+- If the repository name changes, update the `base` path in `vite.config.ts` accordingly.
 
-- `npm run dev` - run development server
-- `npm run build` - type-check and build
-- `npm run preview` - preview production output
-- `npm run test` - run tests
+## Available Scripts
+
+- `npm run dev` - Start the local development server
+- `npm run build` - Run type checks and create a production build
+- `npm run preview` - Preview the production build locally
+- `npm run test` - Run test suite
 
 ## License
+
 This project is licensed under the MIT License. See `LICENSE.md` for details.

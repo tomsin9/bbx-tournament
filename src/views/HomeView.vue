@@ -26,6 +26,26 @@ function triggerImport() {
   fileInput.value?.click()
 }
 
+function triggerExport() {
+  const json = store.exportJsonText()
+  const safeName = (store.tournamentName || 'bbx-tournament')
+    .trim()
+    .replace(/[^a-z0-9-_]+/gi, '-')
+    .replace(/^-+|-+$/g, '')
+    .toLowerCase()
+  const date = new Date().toISOString().slice(0, 10)
+  const filename = `${safeName || 'bbx-tournament'}-${date}.json`
+  const blob = new Blob([json], { type: 'application/json;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+}
+
 async function onFile(e: Event) {
   const input = e.target as HTMLInputElement
   const file = input.files?.[0]
@@ -75,7 +95,7 @@ function removeTournament(id: string) {
       <div
         class="inline-block rounded-full bg-bx-primary/10 px-3 py-1 text-xs font-bold uppercase tracking-widest text-bx-primary"
       >
-        Beyblade X Manager
+        BBX Tournament Manager
       </div>
       <h1 class="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
         {{ t('app.title') }}
@@ -85,7 +105,7 @@ function removeTournament(id: string) {
       </p>
     </header>
 
-    <section v-if="!hasCurrentTournament" class="grid gap-4 sm:grid-cols-2">
+    <section v-if="!hasCurrentTournament" class="grid gap-4">
       <button
         type="button"
         class="group relative flex flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-slate-800 bg-slate-900/50 p-10 transition-all hover:border-bx-primary hover:bg-slate-900"
@@ -101,29 +121,6 @@ function removeTournament(id: string) {
         <div class="text-center">
           <h3 class="text-lg font-bold text-white">{{ t('home.createNewTournament') }}</h3>
           <p class="text-sm text-slate-500">{{ t('home.newTournamentHint') }}</p>
-        </div>
-      </button>
-
-      <button
-        type="button"
-        class="group flex flex-col items-center justify-center gap-4 rounded-3xl border-2 border-transparent bg-slate-900/50 p-10 transition-all hover:bg-slate-800/80"
-        @click="triggerImport"
-      >
-        <div
-          class="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-800 text-slate-400 transition-colors group-hover:text-white"
-        >
-          <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-            />
-          </svg>
-        </div>
-        <div class="text-center">
-          <h3 class="text-lg font-bold text-slate-300">{{ t('home.import') }}</h3>
-          <p class="text-sm text-slate-500">{{ t('home.importCardHint') }}</p>
         </div>
       </button>
     </section>
@@ -163,7 +160,7 @@ function removeTournament(id: string) {
       </div>
     </section>
 
-    <section v-if="hasCurrentTournament" class="grid gap-3 sm:grid-cols-3">
+    <section v-if="hasCurrentTournament" class="grid gap-3 sm:grid-cols-2">
       <button
         type="button"
         class="rounded-2xl border border-bx-primary/40 bg-bx-primary/10 px-5 py-3 text-sm font-semibold text-bx-primary transition hover:bg-bx-primary/20"
@@ -178,22 +175,7 @@ function removeTournament(id: string) {
       >
         {{ t('home.goSetup') }}
       </button>
-      <button
-        type="button"
-        class="rounded-2xl border border-slate-700 bg-slate-900/60 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:bg-slate-800"
-        @click="triggerImport"
-      >
-        {{ t('home.import') }}
-      </button>
     </section>
-
-    <p v-if="!hasCurrentTournament" class="text-center text-sm text-slate-500">
-      {{ t('home.importHint') }}
-    </p>
-
-    <p v-if="importError" class="text-sm text-bx-primary" role="alert">
-      {{ t('common.importFailed') }}: {{ importError }}
-    </p>
 
     <section v-if="store.tournamentList.length > 0" class="space-y-4">
       <div class="flex items-center justify-between border-b border-slate-800 pb-2">
@@ -258,6 +240,36 @@ function removeTournament(id: string) {
         </li>
       </ul>
     </section>
+
+    <section class="rounded-2xl border border-slate-800 bg-slate-900/30 px-4 py-3">
+      <div class="flex items-center justify-between gap-3">
+        <p class="text-xs font-medium uppercase tracking-wider text-slate-500">{{ t('home.dataTools') }}</p>
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            class="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
+            @click="triggerImport"
+          >
+            {{ t('home.import') }}
+          </button>
+          <button
+            type="button"
+            class="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+            :disabled="!hasCurrentTournament"
+            @click="triggerExport"
+          >
+            {{ t('history.export') }}
+          </button>
+        </div>
+      </div>
+      <p class="mt-2 text-xs text-slate-500">
+        {{ t('home.importHint') }}
+      </p>
+    </section>
+
+    <p v-if="importError" class="text-sm text-bx-primary" role="alert">
+      {{ t('common.importFailed') }}: {{ importError }}
+    </p>
 
     <input
       ref="fileInput"

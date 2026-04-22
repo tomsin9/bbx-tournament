@@ -1,5 +1,16 @@
 {
-  "app": { "title": "BBX Tournament Manager" },
+  "app": {
+    "title": "BBX Tournament",
+    "infoLabel": "Open app info and data tools",
+    "infoTitle": "App info",
+    "infoSubtitle": "About this project and data management",
+    "aboutTitle": "BBX Tournament System",
+    "dataToolsTitle": "Data tools",
+    "versionLabel": "Version",
+    "publishDateLabel": "Publish date",
+    "publishDateValue": "2026-04-22",
+    "license": "MIT License"
+  },
   "nav": {
     "home": "Home",
     "setup": "Setup",
@@ -18,6 +29,7 @@
     "import": "Import JSON",
     "importCardHint": "Load a .json backup file.",
     "importHint": "Load a backup file (.json). Existing data will be replaced after confirmation.",
+    "dataTools": "Data tools",
     "unnamedBattle": "Unnamed Battle",
     "tournamentList": "Tournament list",
     "noTournament": "No tournaments yet.",
