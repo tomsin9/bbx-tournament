@@ -1,4 +1,4 @@
-# Beyblade X Tournament System
+# BBX Tournament System
 
 A web-based tournament management application built with Vue 3 for Beyblade X events.  
 It supports the full event flow from participant setup to match progression, history tracking, and data portability.

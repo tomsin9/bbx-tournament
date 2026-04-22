@@ -252,14 +252,7 @@ async function onFile(e: Event) {
           <p class="mt-2 text-sm text-slate-300">{{ t('app.versionLabel') }}: v{{ APP_VERSION }}</p>
           <p class="mt-1 text-sm text-slate-300">{{ t('app.publishDateLabel') }}: {{ t('app.publishDateValue') }}</p>
           <p class="mt-1 text-sm text-slate-400">
-            <a
-              href="https://github.com/tomsin9/bbx-tournament/blob/main/LICENSE.md"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="underline decoration-slate-500 underline-offset-2 transition hover:text-slate-200"
-            >
-              {{ t('app.license') }}
-            </a>
+            {{ t('app.license') }}
           </p>
         </section>
 
