@@ -1,4 +1,4 @@
-import type { FinishAction, Match, Player } from '@/types/bxtm'
+import type { FinishAction, Match, TournamentParticipant } from '@/types/bxtm'
 
 export interface PlayerStats {
   playerId: string
@@ -18,7 +18,7 @@ function emptyBreakdown(): Record<FinishAction, number> {
 }
 
 export function computePlayerStats(
-  players: Player[],
+  players: TournamentParticipant[],
   matches: Match[],
 ): Map<string, PlayerStats> {
   const map = new Map<string, PlayerStats>()
@@ -37,15 +37,15 @@ export function computePlayerStats(
     const p1Won = m.p1_score > m.p2_score
     const p2Won = m.p2_score > m.p1_score
     if (p1Won) {
-      map.get(m.p1_id)!.wins += 1
-      map.get(m.p2_id)!.losses += 1
+      map.get(m.p1_participant_id)!.wins += 1
+      map.get(m.p2_participant_id)!.losses += 1
     } else if (p2Won) {
-      map.get(m.p2_id)!.wins += 1
-      map.get(m.p1_id)!.losses += 1
+      map.get(m.p2_participant_id)!.wins += 1
+      map.get(m.p1_participant_id)!.losses += 1
     }
 
     for (const log of m.logs) {
-      const st = map.get(log.winner_id)
+      const st = map.get(log.winner_participant_id)
       if (!st) continue
       st.totalPointsScored += log.points
       st.finishBreakdown[log.action] += 1

@@ -14,71 +14,84 @@ function onLocale(e: Event) {
 </script>
 
 <template>
-  <div class="min-h-dvh flex flex-col">
+  <div
+    class="min-h-dvh flex flex-col bg-slate-950 text-slate-100 selection:bg-indigo-500/30"
+  >
     <header
-      class="sticky top-0 z-10 border-b border-slate-800 bg-slate-950/90 backdrop-blur"
+      class="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/80 backdrop-blur-md"
     >
-      <div
-        class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3"
-      >
-        <RouterLink
-          to="/"
-          class="text-lg font-semibold tracking-tight text-white hover:text-indigo-200"
-        >
-          {{ t('app.title') }}
+      <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+        <RouterLink to="/" class="group flex items-center gap-2">
+          <div
+            class="flex h-8 w-8 items-center justify-center rounded bg-linear-to-br from-indigo-600 to-blue-700 font-bold text-white shadow-lg shadow-indigo-500/20"
+          >
+            X
+          </div>
+          <span
+            class="text-lg font-bold tracking-tighter text-white transition-colors group-hover:text-indigo-400"
+          >
+            {{ t('app.title') }}
+          </span>
         </RouterLink>
-        <nav class="flex flex-wrap items-center gap-2 text-sm">
+
+        <nav class="flex items-center gap-1 sm:gap-4">
           <RouterLink
-            to="/"
-            class="rounded-lg px-3 py-2 font-medium text-slate-300 hover:bg-slate-800"
-            active-class="bg-[#2e21de] text-white"
-          >
-            {{ t('nav.home') }}
-          </RouterLink>
-          <RouterLink
-            to="/setup"
-            class="rounded-lg px-3 py-2 font-medium text-slate-300 hover:bg-slate-800"
-            active-class="bg-[#2e21de] text-white"
-          >
-            {{ t('nav.setup') }}
-          </RouterLink>
-          <RouterLink
-            to="/setup"
-            class="rounded-lg px-3 py-2 font-medium text-slate-300 hover:bg-slate-800"
-            active-class="bg-[#2e21de] text-white"
+            to="/players"
+            class="hidden rounded-lg px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:text-white sm:block"
+            active-class="bg-slate-800 text-white"
           >
             {{ t('nav.players') }}
           </RouterLink>
-          <RouterLink
-            to="/lobby"
-            class="rounded-lg px-3 py-2 font-medium text-slate-300 hover:bg-slate-800"
-            active-class="bg-[#2e21de] text-white"
-          >
-            {{ t('nav.lobby') }}
-          </RouterLink>
+
           <RouterLink
             to="/history"
-            class="rounded-lg px-3 py-2 font-medium text-slate-300 hover:bg-slate-800"
-            active-class="bg-[#2e21de] text-white"
+            class="hidden rounded-lg px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:text-white sm:block"
+            active-class="bg-slate-800 text-white"
           >
             {{ t('nav.history') }}
           </RouterLink>
-          <label class="ml-2 flex items-center gap-2 text-slate-400">
-            <span class="sr-only">{{ t('common.language') }}</span>
+
+          <div class="relative">
             <select
-              class="rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-slate-100"
+              class="appearance-none rounded-lg border border-slate-700 bg-slate-900 py-1.5 pl-3 pr-8 text-xs font-medium text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               :value="locale"
               @change="onLocale"
             >
-              <option value="en">English</option>
-              <option value="zh">中文</option>
+              <option value="en">EN</option>
+              <option value="zh">繁中</option>
             </select>
-          </label>
+            <div
+              class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500"
+            >
+              <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                />
+              </svg>
+            </div>
+          </div>
         </nav>
       </div>
     </header>
+
     <main class="mx-auto w-full max-w-5xl flex-1 px-4 py-6">
-      <RouterView />
+      <router-view v-slot="{ Component }">
+        <transition name="fade" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
     </main>
   </div>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>

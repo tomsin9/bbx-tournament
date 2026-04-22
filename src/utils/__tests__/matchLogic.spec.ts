@@ -5,8 +5,8 @@ import { applyScore, isMatchFinished, undoLast } from '@/utils/matchLogic'
 function baseMatch(overrides?: Partial<Match>): Match {
   return {
     match_id: 'm-1',
-    p1_id: 'a',
-    p2_id: 'b',
+    p1_participant_id: 'a',
+    p2_participant_id: 'b',
     p1_score: 0,
     p2_score: 0,
     logs: [],

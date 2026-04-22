@@ -1,4 +1,10 @@
-import type { BxTmState, FinishAction, Match, MatchLogEntry, Player } from '@/types/bxtm'
+import type {
+  BxTmState,
+  FinishAction,
+  Match,
+  MatchLogEntry,
+  TournamentParticipant,
+} from '@/types/bxtm'
 import { APP_VERSION, FINISH_POINTS, emptyState } from '@/types/bxtm'
 
 const FINISH_ACTIONS = new Set<FinishAction>([
@@ -19,7 +25,7 @@ function isFinishAction(v: unknown): v is FinishAction {
 function isLogEntry(v: unknown): v is MatchLogEntry {
   if (!v || typeof v !== 'object') return false
   const o = v as Record<string, unknown>
-  if (typeof o.winner_id !== 'string') return false
+  if (typeof o.winner_participant_id !== 'string' && typeof o.winner_id !== 'string') return false
   if (!isFinishAction(o.action)) return false
   if (typeof o.points !== 'number' || !Number.isFinite(o.points)) return false
   const expected = FINISH_POINTS[o.action]
@@ -27,10 +33,11 @@ function isLogEntry(v: unknown): v is MatchLogEntry {
   return true
 }
 
-function isPlayer(v: unknown): v is Player {
+function isParticipant(v: unknown): v is TournamentParticipant {
   if (!v || typeof v !== 'object') return false
   const o = v as Record<string, unknown>
   if (typeof o.id !== 'string' || !o.id) return false
+  if (typeof o.player_id !== 'string' || !o.player_id) return false
   if (typeof o.name !== 'string' || !o.name) return false
   if (typeof o.created_at !== 'string') return false
   if (o.bey_name !== undefined && typeof o.bey_name !== 'string') return false
@@ -41,8 +48,10 @@ function coerceMatch(v: unknown, defaultTargetPoints: number): Match | null {
   if (!v || typeof v !== 'object') return null
   const o = v as Record<string, unknown>
   if (typeof o.match_id !== 'string' || !o.match_id) return null
-  if (typeof o.p1_id !== 'string' || typeof o.p2_id !== 'string') return null
-  if (o.p1_id === o.p2_id) return null
+  const p1 = typeof o.p1_participant_id === 'string' ? o.p1_participant_id : o.p1_id
+  const p2 = typeof o.p2_participant_id === 'string' ? o.p2_participant_id : o.p2_id
+  if (typeof p1 !== 'string' || typeof p2 !== 'string') return null
+  if (p1 === p2) return null
   if (typeof o.p1_score !== 'number' || typeof o.p2_score !== 'number') return null
   if (!Number.isFinite(o.p1_score) || !Number.isFinite(o.p2_score)) return null
   if (o.status !== 'live' && o.status !== 'finished') return null
@@ -53,17 +62,35 @@ function coerceMatch(v: unknown, defaultTargetPoints: number): Match | null {
       : defaultTargetPoints
   if (!Array.isArray(o.logs) || !o.logs.every(isLogEntry)) return null
   if (o.tournament_name !== undefined && typeof o.tournament_name !== 'string') return null
+  const logs: MatchLogEntry[] = o.logs.map((log) => {
+    const l = log as unknown as Record<string, unknown>
+    return {
+      winner_participant_id:
+        typeof l.winner_participant_id === 'string'
+          ? l.winner_participant_id
+          : (l.winner_id as string),
+      action: l.action as FinishAction,
+      points: l.points as number,
+      timestamp: typeof l.timestamp === 'string' ? l.timestamp : undefined,
+    }
+  })
   return {
     match_id: o.match_id,
-    p1_id: o.p1_id,
-    p2_id: o.p2_id,
+    p1_participant_id: p1,
+    p2_participant_id: p2,
     p1_score: o.p1_score,
     p2_score: o.p2_score,
-    logs: o.logs,
+    logs,
     status: o.status,
     timestamp: o.timestamp,
     target_points: tp,
     tournament_name: o.tournament_name as string | undefined,
+    winner_participant_id:
+      typeof o.winner_participant_id === 'string'
+        ? o.winner_participant_id
+        : typeof o.winner_id === 'string'
+          ? o.winner_id
+          : undefined,
   }
 }
 
@@ -88,8 +115,27 @@ export function parseBxTmJson(text: string): ParseResult {
   if (typeof root.target_points !== 'number' || root.target_points < 1) {
     return { ok: false, error: 'Invalid target_points' }
   }
-  if (!Array.isArray(root.players) || !root.players.every(isPlayer)) {
-    return { ok: false, error: 'Invalid players' }
+  const participantsRaw = Array.isArray(root.participants) ? root.participants : root.players
+  if (!Array.isArray(participantsRaw)) {
+    return { ok: false, error: 'Invalid participants' }
+  }
+  const participants: TournamentParticipant[] = participantsRaw
+    .map((p) => {
+      if (isParticipant(p)) return p
+      if (!p || typeof p !== 'object') return null
+      const o = p as Record<string, unknown>
+      if (typeof o.id !== 'string' || typeof o.name !== 'string' || typeof o.created_at !== 'string') return null
+      return {
+        id: o.id,
+        player_id: typeof o.player_id === 'string' ? o.player_id : o.id,
+        name: o.name,
+        created_at: o.created_at,
+        bey_name: typeof o.bey_name === 'string' ? o.bey_name : undefined,
+      }
+    })
+    .filter((v): v is TournamentParticipant => Boolean(v))
+  if (participants.length !== participantsRaw.length) {
+    return { ok: false, error: 'Invalid participants' }
   }
   if (!Array.isArray(root.matches)) {
     return { ok: false, error: 'Invalid matches' }
@@ -104,7 +150,7 @@ export function parseBxTmJson(text: string): ParseResult {
     app_version: version,
     tournament_name: root.tournament_name,
     target_points: root.target_points,
-    players: root.players,
+    participants,
     matches,
   }
   return { ok: true, data }
@@ -118,7 +164,7 @@ export function serializeState(state: BxTmState): string {
   )
 }
 
-/** Minimal import: only players + matches (spec sample); merge into empty tournament shell. */
+/** Minimal import: only participants/players + matches; merge into empty tournament shell. */
 export function normalizeImportedState(raw: unknown): ParseResult {
   if (!raw || typeof raw !== 'object') {
     return { ok: false, error: 'Root must be an object' }
@@ -127,16 +173,36 @@ export function normalizeImportedState(raw: unknown): ParseResult {
   const hasFull =
     typeof root.tournament_name === 'string' &&
     typeof root.target_points === 'number' &&
-    Array.isArray(root.players) &&
+    (Array.isArray(root.participants) || Array.isArray(root.players)) &&
     Array.isArray(root.matches)
 
   if (hasFull) {
     return parseBxTmJson(JSON.stringify(raw))
   }
 
-  if (Array.isArray(root.players) && Array.isArray(root.matches)) {
-    if (!root.players.every(isPlayer)) {
-      return { ok: false, error: 'Invalid players' }
+  if ((Array.isArray(root.participants) || Array.isArray(root.players)) && Array.isArray(root.matches)) {
+    const participantsRaw: unknown[] = Array.isArray(root.participants)
+      ? root.participants
+      : Array.isArray(root.players)
+        ? root.players
+        : []
+    const participants: TournamentParticipant[] = participantsRaw
+      .map((p) => {
+        if (isParticipant(p)) return p
+        if (!p || typeof p !== 'object') return null
+        const o = p as Record<string, unknown>
+        if (typeof o.id !== 'string' || typeof o.name !== 'string' || typeof o.created_at !== 'string') return null
+        return {
+          id: o.id,
+          player_id: typeof o.player_id === 'string' ? o.player_id : o.id,
+          name: o.name,
+          created_at: o.created_at,
+          bey_name: typeof o.bey_name === 'string' ? o.bey_name : undefined,
+        }
+      })
+      .filter((v): v is TournamentParticipant => Boolean(v))
+    if (participants.length !== participantsRaw.length) {
+      return { ok: false, error: 'Invalid participants' }
     }
     const defaultTarget =
       typeof root.target_points === 'number' && root.target_points >= 1
@@ -154,7 +220,7 @@ export function normalizeImportedState(raw: unknown): ParseResult {
       app_version: typeof root.app_version === 'string' ? root.app_version : APP_VERSION,
       tournament_name: typeof root.tournament_name === 'string' ? root.tournament_name : '',
       target_points: defaultTarget,
-      players: root.players,
+      participants,
       matches,
     }
     return { ok: true, data }

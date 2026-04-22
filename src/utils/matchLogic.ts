@@ -7,15 +7,20 @@ export function pointsForAction(action: FinishAction): number {
 
 export function applyScore(
   match: Match,
-  winnerId: string,
+  winnerParticipantId: string,
   action: FinishAction,
 ): Match {
   if (match.status !== 'live') return match
-  if (winnerId !== match.p1_id && winnerId !== match.p2_id) return match
+  if (winnerParticipantId !== match.p1_participant_id && winnerParticipantId !== match.p2_participant_id) return match
   const points = pointsForAction(action)
-  const log: MatchLogEntry = { winner_id: winnerId, action, points }
-  const p1_score = match.p1_score + (winnerId === match.p1_id ? points : 0)
-  const p2_score = match.p2_score + (winnerId === match.p2_id ? points : 0)
+  const log: MatchLogEntry = {
+    winner_participant_id: winnerParticipantId,
+    action,
+    points,
+    timestamp: new Date().toISOString(),
+  }
+  const p1_score = match.p1_score + (winnerParticipantId === match.p1_participant_id ? points : 0)
+  const p2_score = match.p2_score + (winnerParticipantId === match.p2_participant_id ? points : 0)
   const target = match.target_points
   const finished = p1_score >= target || p2_score >= target
   return {
@@ -24,6 +29,11 @@ export function applyScore(
     p2_score,
     logs: [...match.logs, log],
     status: finished ? 'finished' : 'live',
+    winner_participant_id: finished
+      ? p1_score > p2_score
+        ? match.p1_participant_id
+        : match.p2_participant_id
+      : undefined,
   }
 }
 
@@ -32,8 +42,10 @@ export function undoLast(match: Match): Match {
   const logs = [...match.logs]
   const last = logs.pop()
   if (!last) return match
-  const p1_score = match.p1_score - (last.winner_id === match.p1_id ? last.points : 0)
-  const p2_score = match.p2_score - (last.winner_id === match.p2_id ? last.points : 0)
+  const p1_score =
+    match.p1_score - (last.winner_participant_id === match.p1_participant_id ? last.points : 0)
+  const p2_score =
+    match.p2_score - (last.winner_participant_id === match.p2_participant_id ? last.points : 0)
   return {
     ...match,
     p1_score: Math.max(0, p1_score),

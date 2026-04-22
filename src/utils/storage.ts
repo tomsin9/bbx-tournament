@@ -1,4 +1,10 @@
-import type { BxTmState, TournamentCollection, TournamentRecord } from '@/types/bxtm'
+import type {
+  BxTmState,
+  PlayerProfile,
+  TournamentCollection,
+  TournamentParticipant,
+  TournamentRecord,
+} from '@/types/bxtm'
 import { APP_VERSION, emptyState } from '@/types/bxtm'
 import { normalizeImportedState } from '@/utils/exportImport'
 
@@ -24,7 +30,39 @@ export function emptyCollection(): TournamentCollection {
     app_version: APP_VERSION,
     active_tournament_id: rec.id,
     tournaments: [rec],
+    player_catalog: [],
   }
+}
+
+function buildCatalog(tournaments: TournamentRecord[], rawCatalog: unknown): PlayerProfile[] {
+  const map = new Map<string, PlayerProfile>()
+  if (Array.isArray(rawCatalog)) {
+    for (const p of rawCatalog) {
+      if (!p || typeof p !== 'object') continue
+      const o = p as Record<string, unknown>
+      if (typeof o.id !== 'string' || typeof o.name !== 'string') continue
+      map.set(o.id, {
+        id: o.id,
+        name: o.name,
+        created_at: typeof o.created_at === 'string' ? o.created_at : new Date().toISOString().slice(0, 10),
+        default_bey_name: typeof o.default_bey_name === 'string' ? o.default_bey_name : undefined,
+      })
+    }
+  }
+  for (const t of tournaments) {
+    const participants = t.state.participants as TournamentParticipant[]
+    for (const p of participants) {
+      if (!map.has(p.player_id)) {
+        map.set(p.player_id, {
+          id: p.player_id,
+          name: p.name,
+          created_at: p.created_at,
+          default_bey_name: p.bey_name,
+        })
+      }
+    }
+  }
+  return [...map.values()].sort((a, b) => a.name.localeCompare(b.name))
 }
 
 export function loadFromLocalStorage(): TournamentCollection {
@@ -63,6 +101,7 @@ export function loadFromLocalStorage(): TournamentCollection {
             app_version: APP_VERSION,
             active_tournament_id: active,
             tournaments,
+            player_catalog: buildCatalog(tournaments, root.player_catalog),
           }
         }
       }
@@ -75,6 +114,7 @@ export function loadFromLocalStorage(): TournamentCollection {
         app_version: APP_VERSION,
         active_tournament_id: rec.id,
         tournaments: [rec],
+        player_catalog: buildCatalog([rec], []),
       }
     }
     return emptyCollection()

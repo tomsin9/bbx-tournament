@@ -1,11 +1,14 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-bx-primary: #2e21de;
-  --color-bx-primary-hover: #3b2eeb;
+  --color-bx-dark: #0a0a0c;
+  --color-bx-primary: #21ff5f;
+  --color-bx-primary-hover: #42ff77;
+  --color-bx-accent: #00d4ff;
+  --color-bx-surface: #16181d;
   --font-sans: ui-sans-serif, system-ui, sans-serif;
 }
 
 body {
-  @apply min-h-dvh bg-slate-950 text-slate-100 antialiased;
+  @apply min-h-dvh bg-bx-dark text-white antialiased;
 }

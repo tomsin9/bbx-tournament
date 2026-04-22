@@ -1,5 +1,13 @@
-export interface Player {
+export interface PlayerProfile {
   id: string
+  name: string
+  created_at: string
+  default_bey_name?: string
+}
+
+export interface TournamentParticipant {
+  id: string
+  player_id: string
   name: string
   created_at: string
   bey_name?: string
@@ -14,15 +22,16 @@ export type FinishAction =
   | 'Spin Finish'
 
 export interface MatchLogEntry {
-  winner_id: string
+  winner_participant_id: string
   action: FinishAction
   points: number
+  timestamp?: string
 }
 
 export interface Match {
   match_id: string
-  p1_id: string
-  p2_id: string
+  p1_participant_id: string
+  p2_participant_id: string
   p1_score: number
   p2_score: number
   logs: MatchLogEntry[]
@@ -30,13 +39,14 @@ export interface Match {
   timestamp: string
   target_points: number
   tournament_name?: string
+  winner_participant_id?: string
 }
 
 export interface BxTmState {
   app_version: string
   tournament_name: string
   target_points: number
-  players: Player[]
+  participants: TournamentParticipant[]
   matches: Match[]
 }
 
@@ -51,6 +61,7 @@ export interface TournamentCollection {
   app_version: string
   active_tournament_id: string | null
   tournaments: TournamentRecord[]
+  player_catalog: PlayerProfile[]
 }
 
 export const FINISH_POINTS: Record<FinishAction, number> = {
@@ -67,7 +78,7 @@ export function emptyState(): BxTmState {
     app_version: APP_VERSION,
     tournament_name: '',
     target_points: 4,
-    players: [],
+    participants: [],
     matches: [],
   }
 }

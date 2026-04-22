@@ -1,10 +1,17 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
-import type { BxTmState, FinishAction, Match, Player, TournamentRecord } from '@/types/bxtm'
+import type {
+  BxTmState,
+  FinishAction,
+  Match,
+  PlayerProfile,
+  TournamentParticipant,
+  TournamentRecord,
+} from '@/types/bxtm'
 import { APP_VERSION, emptyState } from '@/types/bxtm'
 import { normalizeImportedState, serializeState } from '@/utils/exportImport'
 import { applyScore as applyScorePure, undoLast as undoLastPure } from '@/utils/matchLogic'
-import { emptyCollection, loadFromLocalStorage, saveToLocalStorage } from '@/utils/storage'
+import { loadFromLocalStorage, saveToLocalStorage } from '@/utils/storage'
 
 function newId(prefix: string): string {
   return `${prefix}-${crypto.randomUUID().slice(0, 8)}`
@@ -13,6 +20,7 @@ function newId(prefix: string): string {
 export const useTournamentStore = defineStore('tournament', () => {
   const tournaments = ref<TournamentRecord[]>([])
   const activeTournamentId = ref<string | null>(null)
+  const playerCatalog = ref<PlayerProfile[]>([])
   const hydrated = ref(false)
 
   const state = computed<BxTmState>(() => {
@@ -22,9 +30,7 @@ export const useTournamentStore = defineStore('tournament', () => {
 
   function ensureActive(): void {
     if (tournaments.value.length === 0) {
-      const base = emptyCollection()
-      tournaments.value = base.tournaments
-      activeTournamentId.value = base.active_tournament_id
+      activeTournamentId.value = null
       return
     }
     if (!activeTournamentId.value || !tournaments.value.some((t) => t.id === activeTournamentId.value)) {
@@ -59,12 +65,13 @@ export const useTournamentStore = defineStore('tournament', () => {
     const payload = loadFromLocalStorage()
     tournaments.value = payload.tournaments
     activeTournamentId.value = payload.active_tournament_id
+    playerCatalog.value = payload.player_catalog
     ensureActive()
     hydrated.value = true
   }
 
   watch(
-    [tournaments, activeTournamentId],
+    [tournaments, activeTournamentId, playerCatalog],
     () => {
       if (!hydrated.value) return
       ensureActive()
@@ -72,18 +79,19 @@ export const useTournamentStore = defineStore('tournament', () => {
         app_version: APP_VERSION,
         active_tournament_id: activeTournamentId.value,
         tournaments: tournaments.value,
+        player_catalog: playerCatalog.value,
       })
     },
     { deep: true },
   )
 
-  const players = computed(() => state.value.players)
+  const players = computed(() => state.value.participants)
   const matches = computed(() => state.value.matches)
   const tournamentList = computed(() =>
     tournaments.value.map((t) => ({
       id: t.id,
       name: t.state.tournament_name || 'Untitled',
-      players: t.state.players.length,
+      players: t.state.participants.length,
       matches: t.state.matches.length,
       updatedAt: t.updated_at,
       isActive: t.id === activeTournamentId.value,
@@ -102,23 +110,14 @@ export const useTournamentStore = defineStore('tournament', () => {
     },
   })
 
-  const hasPlayers = computed(() => state.value.players.length > 0)
-  const playerLibrary = computed<Player[]>(() => {
-    const map = new Map<string, Player>()
-    for (const t of tournaments.value) {
-      for (const p of t.state.players) {
-        const key = `${p.name.trim().toLowerCase()}|${(p.bey_name ?? '').trim().toLowerCase()}`
-        if (!map.has(key)) {
-          map.set(key, {
-            id: p.id,
-            name: p.name,
-            bey_name: p.bey_name,
-            created_at: p.created_at,
-          })
-        }
-      }
-    }
-    return [...map.values()].sort((a, b) => a.name.localeCompare(b.name))
+  const hasPlayers = computed(() => state.value.participants.length > 0)
+  const playerLibrary = computed(() =>
+    [...playerCatalog.value].sort((a, b) => a.name.localeCompare(b.name)),
+  )
+  const playerCatalogMap = computed(() => {
+    const map = new Map<string, PlayerProfile>()
+    for (const p of playerCatalog.value) map.set(p.id, p)
+    return map
   })
   const liveMatches = computed(() => state.value.matches.filter((m) => m.status === 'live'))
   const finishedMatches = computed(() =>
@@ -143,17 +142,20 @@ export const useTournamentStore = defineStore('tournament', () => {
   }
 
   function deleteTournament(id: string) {
-    if (tournaments.value.length <= 1) return
     tournaments.value = tournaments.value.filter((t) => t.id !== id)
     ensureActive()
   }
 
-  function applySetup(payload: { tournamentName: string; targetPoints: number; players: Player[] }) {
+  function applySetup(payload: {
+    tournamentName: string
+    targetPoints: number
+    players: TournamentParticipant[]
+  }) {
     updateState((s) => ({
       ...s,
       tournament_name: payload.tournamentName.trim(),
       target_points: Math.max(1, Math.floor(payload.targetPoints)),
-      players: payload.players,
+      participants: payload.players,
     }))
   }
 
@@ -161,53 +163,122 @@ export const useTournamentStore = defineStore('tournament', () => {
     const name = payload.name.trim()
     const bey_name = payload.bey_name?.trim() || undefined
     if (!name) return
+    const today = new Date().toISOString().slice(0, 10)
+    const participantId = payload.id
+    const participant = participantId ? state.value.participants.find((p) => p.id === participantId) : undefined
+    const profileId = participant?.player_id ?? newId('pl')
+
+    const catalogIdx = playerCatalog.value.findIndex((p) => p.id === profileId)
+    if (catalogIdx >= 0) {
+      const nextCatalog = [...playerCatalog.value]
+      nextCatalog[catalogIdx] = {
+        ...nextCatalog[catalogIdx]!,
+        name,
+        default_bey_name: bey_name,
+      }
+      playerCatalog.value = nextCatalog
+    } else {
+      playerCatalog.value = [
+        ...playerCatalog.value,
+        { id: profileId, name, default_bey_name: bey_name, created_at: today },
+      ]
+    }
+
     updateState((s) => {
-      const next = [...s.players]
+      const next = [...s.participants]
       const idx = payload.id ? next.findIndex((p) => p.id === payload.id) : -1
       if (idx >= 0) {
-        next[idx] = { ...next[idx]!, name, bey_name }
+        next[idx] = { ...next[idx]!, name, bey_name, player_id: profileId }
       } else {
         next.push({
-          id: newId('p'),
+          id: newId('tp'),
+          player_id: profileId,
           name,
           bey_name,
-          created_at: new Date().toISOString().slice(0, 10),
+          created_at: today,
         })
       }
-      return { ...s, players: next }
+      return { ...s, participants: next }
     })
   }
 
   function removePlayer(id: string) {
     updateState((s) => ({
       ...s,
-      players: s.players.filter((p) => p.id !== id),
-      matches: s.matches.filter((m) => m.p1_id !== id && m.p2_id !== id),
+      participants: s.participants.filter((p) => p.id !== id),
+      matches: s.matches.filter(
+        (m) => m.p1_participant_id !== id && m.p2_participant_id !== id,
+      ),
     }))
   }
 
-  function addPlayersFromLibrary(playersToAdd: Array<{ name: string; bey_name?: string }>) {
+  function addPlayersFromLibrary(playersToAdd: Array<PlayerProfile>) {
     const today = new Date().toISOString().slice(0, 10)
     updateState((s) => {
-      const existing = new Set(
-        s.players.map((p) => `${p.name.trim().toLowerCase()}|${(p.bey_name ?? '').trim().toLowerCase()}`),
-      )
-      const next = [...s.players]
+      const existing = new Set(s.participants.map((p) => p.player_id))
+      const next = [...s.participants]
       for (const p of playersToAdd) {
         const name = p.name.trim()
-        const bey_name = p.bey_name?.trim() || undefined
+        const bey_name = p.default_bey_name?.trim() || undefined
         if (!name) continue
-        const key = `${name.toLowerCase()}|${(bey_name ?? '').toLowerCase()}`
-        if (existing.has(key)) continue
-        existing.add(key)
+        if (existing.has(p.id)) continue
+        existing.add(p.id)
         next.push({
-          id: newId('p'),
+          id: newId('tp'),
+          player_id: p.id,
           name,
           bey_name,
-          created_at: today,
+          created_at: p.created_at ?? today,
         })
       }
-      return { ...s, players: next }
+      return { ...s, participants: next }
+    })
+  }
+
+  function updatePlayerProfile(payload: { id: string; name: string; default_bey_name?: string }) {
+    const id = payload.id
+    const name = payload.name.trim()
+    const default_bey_name = payload.default_bey_name?.trim() || undefined
+    if (!name) return
+
+    const idx = playerCatalog.value.findIndex((p) => p.id === id)
+    if (idx === -1) return
+    const nextCatalog = [...playerCatalog.value]
+    nextCatalog[idx] = { ...nextCatalog[idx]!, name, default_bey_name }
+    playerCatalog.value = nextCatalog
+
+    tournaments.value = tournaments.value.map((t) => ({
+      ...t,
+      updated_at: new Date().toISOString(),
+      state: {
+        ...t.state,
+        participants: t.state.participants.map((p) =>
+          p.player_id === id ? { ...p, name, bey_name: p.bey_name ?? default_bey_name } : p,
+        ),
+      },
+    }))
+  }
+
+  function deletePlayerProfile(profileId: string) {
+    playerCatalog.value = playerCatalog.value.filter((p) => p.id !== profileId)
+    tournaments.value = tournaments.value.map((t) => {
+      const removedIds = new Set(
+        t.state.participants.filter((p) => p.player_id === profileId).map((p) => p.id),
+      )
+      if (removedIds.size === 0) return t
+      return {
+        ...t,
+        updated_at: new Date().toISOString(),
+        state: {
+          ...t.state,
+          participants: t.state.participants.filter((p) => !removedIds.has(p.id)),
+          matches: t.state.matches.filter(
+            (m) =>
+              !removedIds.has(m.p1_participant_id) &&
+              !removedIds.has(m.p2_participant_id),
+          ),
+        },
+      }
     })
   }
 
@@ -249,8 +320,8 @@ export const useTournamentStore = defineStore('tournament', () => {
     if (p1_id === p2_id) throw new Error('same_player')
     const match: Match = {
       match_id: newId('m'),
-      p1_id,
-      p2_id,
+      p1_participant_id: p1_id,
+      p2_participant_id: p2_id,
       p1_score: 0,
       p2_score: 0,
       logs: [],
@@ -281,8 +352,12 @@ export const useTournamentStore = defineStore('tournament', () => {
     updateState((s) => ({ ...s, matches: next }))
   }
 
-  function playerById(id: string): Player | undefined {
-    return state.value.players.find((p) => p.id === id)
+  function playerById(id: string): TournamentParticipant | undefined {
+    return state.value.participants.find((p) => p.id === id)
+  }
+
+  function profileById(id: string): PlayerProfile | undefined {
+    return playerCatalogMap.value.get(id)
   }
 
   return {
@@ -305,6 +380,8 @@ export const useTournamentStore = defineStore('tournament', () => {
     addOrUpdatePlayer,
     removePlayer,
     addPlayersFromLibrary,
+    updatePlayerProfile,
+    deletePlayerProfile,
     importJsonText,
     exportJsonText,
     getMatch,
@@ -312,6 +389,7 @@ export const useTournamentStore = defineStore('tournament', () => {
     applyScore,
     undo,
     playerById,
+    profileById,
     replaceState,
   }
 })
