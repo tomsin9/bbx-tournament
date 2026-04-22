@@ -5,7 +5,7 @@ import type {
   TournamentParticipant,
   TournamentRecord,
 } from '@/types/bxtm'
-import { APP_VERSION, emptyState } from '@/types/bxtm'
+import { APP_VERSION } from '@/types/bxtm'
 import { normalizeImportedState } from '@/utils/exportImport'
 
 export const STORAGE_KEY = 'bxtm_state'
@@ -25,11 +25,10 @@ function makeRecord(state: BxTmState): TournamentRecord {
 }
 
 export function emptyCollection(): TournamentCollection {
-  const rec = makeRecord(emptyState())
   return {
     app_version: APP_VERSION,
-    active_tournament_id: rec.id,
-    tournaments: [rec],
+    active_tournament_id: null,
+    tournaments: [],
     player_catalog: [],
   }
 }

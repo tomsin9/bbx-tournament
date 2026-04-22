@@ -59,7 +59,7 @@
     "playersTitle": "Players",
     "playerFormHelp": "Use form fields to manage players. No plain text input needed.",
     "playerName": "Player name",
-    "playerBey": "Bey name (optional)",
+    "playerBey": "Bey combo / names (optional)",
     "addPlayer": "Add player",
     "updatePlayer": "Update player",
     "updateWarrior": "Update player",
@@ -121,10 +121,25 @@
   },
   "history": {
     "title": "History",
+    "subtitle": "Relive every glorious match.",
     "empty": "No finished matches yet.",
     "export": "Export JSON",
     "vs": "vs",
-    "score": "Score"
+    "score": "Score",
+    "winner": "Winner: {name}",
+    "matchDetails": "Match Details"
+  },
+  "players": {
+    "registry": "Player Registry",
+    "registered": "Registered",
+    "registerPlayer": "Register Player",
+    "noPlayersReady": "No Players Ready",
+    "stockBey": "Stock Bey",
+    "availableCount": "{n} Available",
+    "editLibraryPlayer": "Edit Library Player",
+    "saveLibraryPlayer": "Save Library Player",
+    "deploySelectedPlayers": "Deploy {n} Selected Players",
+    "deleteLibraryConfirm": "Delete this library player from all tournaments?"
   },
   "common": {
     "cancel": "Cancel",

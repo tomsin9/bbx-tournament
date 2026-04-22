@@ -59,7 +59,7 @@
     "playersTitle": "選手",
     "playerFormHelp": "用表單管理選手，不需再用純文字貼上。",
     "playerName": "選手名稱",
-    "playerBey": "陀螺名稱（可選）",
+    "playerBey": "陀螺組合／名稱（可選）",
     "addPlayer": "新增選手",
     "updatePlayer": "更新選手",
     "updateWarrior": "更新選手",
@@ -121,10 +121,25 @@
   },
   "history": {
     "title": "歷史紀錄",
+    "subtitle": "記錄過去每一場榮耀時刻",
     "empty": "尚無已結束場次。",
     "export": "匯出 JSON",
     "vs": "對",
-    "score": "比分"
+    "score": "比分",
+    "winner": "勝方：{name}",
+    "matchDetails": "對戰詳情"
+  },
+  "players": {
+    "registry": "選手登錄",
+    "registered": "已登錄",
+    "registerPlayer": "登錄選手",
+    "noPlayersReady": "尚未有可出戰選手",
+    "stockBey": "原廠陀螺",
+    "availableCount": "{n} 位可用",
+    "editLibraryPlayer": "編輯選手庫選手",
+    "saveLibraryPlayer": "儲存選手庫選手",
+    "deploySelectedPlayers": "加入 {n} 位已選選手",
+    "deleteLibraryConfirm": "要從所有賽事刪除此選手庫選手嗎？"
   },
   "common": {
     "cancel": "取消",

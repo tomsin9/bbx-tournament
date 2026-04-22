@@ -105,7 +105,7 @@ function saveLibraryPlayer() {
 }
 
 function removeLibraryPlayer(id: string) {
-  if (!confirm('Delete this library player from all tournaments?')) return
+  if (!confirm(t('players.deleteLibraryConfirm'))) return
   store.deletePlayerProfile(id)
   selectedLibraryKeys.value = selectedLibraryKeys.value.filter((k) => k !== id)
   if (libraryEditingId.value === id) cancelEditLibraryPlayer()
@@ -119,11 +119,13 @@ function removeLibraryPlayer(id: string) {
         <h1 class="text-3xl font-black italic uppercase tracking-tighter text-white">
           {{ t('nav.players') }}
         </h1>
-        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">Player Registry</p>
+        <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">
+          {{ t('players.registry') }}
+        </p>
       </div>
       <div class="text-right">
         <span class="text-3xl font-black italic text-bx-primary">{{ store.players.length }}</span>
-        <span class="ml-1 text-xs font-bold uppercase text-slate-600">Registered</span>
+        <span class="ml-1 text-xs font-bold uppercase text-slate-600">{{ t('players.registered') }}</span>
       </div>
     </header>
 
@@ -136,7 +138,7 @@ function removeLibraryPlayer(id: string) {
       >
         <div class="grid gap-4 sm:grid-cols-2">
           <div class="space-y-1.5">
-            <label class="px-2 text-[10px] font-black italic uppercase tracking-widest text-slate-500">Player Name</label>
+            <label class="px-2 text-[10px] font-black italic uppercase tracking-widest text-slate-500">{{ t('setup.playerName') }}</label>
             <input
               ref="playerNameInput"
               v-model="playerName"
@@ -147,7 +149,7 @@ function removeLibraryPlayer(id: string) {
             />
           </div>
           <div class="space-y-1.5">
-            <label class="px-2 text-[10px] font-black italic uppercase tracking-widest text-slate-500">Bey Name</label>
+            <label class="px-2 text-[10px] font-black italic uppercase tracking-widest text-slate-500">{{ t('setup.playerBey') }}</label>
             <input
               v-model="playerBey"
               type="text"
@@ -165,7 +167,7 @@ function removeLibraryPlayer(id: string) {
             :disabled="!canAddPlayer"
             @click="submitPlayer"
           >
-            {{ editingId ? 'Update Player' : 'Register Player' }}
+            {{ editingId ? t('setup.updatePlayer') : t('players.registerPlayer') }}
           </button>
           <button
             v-if="editingId"
@@ -188,7 +190,7 @@ function removeLibraryPlayer(id: string) {
         v-if="store.players.length === 0"
         class="rounded-4xl border-2 border-dashed border-slate-800 py-12 text-center"
       >
-        <p class="font-bold italic uppercase tracking-widest text-slate-600">No Players Ready</p>
+        <p class="font-bold italic uppercase tracking-widest text-slate-600">{{ t('players.noPlayersReady') }}</p>
       </div>
 
       <transition-group name="list" tag="ul" class="grid gap-2">
@@ -206,7 +208,7 @@ function removeLibraryPlayer(id: string) {
             <div>
               <p class="font-black italic uppercase tracking-tighter text-white">{{ p.name }}</p>
               <p class="text-[10px] font-bold uppercase tracking-widest text-bx-accent">
-                {{ p.bey_name || 'Stock Bey' }}
+                {{ p.bey_name || t('players.stockBey') }}
               </p>
             </div>
           </div>
@@ -229,12 +231,16 @@ function removeLibraryPlayer(id: string) {
 
     <section v-if="libraryOptions.length > 0" class="border-t border-slate-900 pt-6">
       <div class="mb-4 flex items-center justify-between px-2">
-        <h3 class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Player Library</h3>
-        <span class="text-[10px] font-bold text-slate-600">{{ libraryOptions.length }} Available</span>
+        <h3 class="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">{{ t('setup.playerLibraryTitle') }}</h3>
+        <span class="text-[10px] font-bold text-slate-600">
+          {{ t('players.availableCount', { n: libraryOptions.length }) }}
+        </span>
       </div>
 
       <div v-if="libraryEditingId" class="mb-4 space-y-3 rounded-2xl border border-bx-primary/30 bg-bx-primary/5 p-4">
-        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-bx-primary">Edit Library Player</p>
+        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-bx-primary">
+          {{ t('players.editLibraryPlayer') }}
+        </p>
         <div class="grid gap-2 sm:grid-cols-2">
           <input
             v-model="libraryName"
@@ -256,14 +262,14 @@ function removeLibraryPlayer(id: string) {
             :disabled="!libraryName.trim()"
             @click="saveLibraryPlayer"
           >
-            Save Library Player
+            {{ t('players.saveLibraryPlayer') }}
           </button>
           <button
             type="button"
             class="rounded-xl border border-slate-700 px-4 py-2 text-xs font-bold text-slate-300 hover:bg-slate-900"
             @click="cancelEditLibraryPlayer"
           >
-            Cancel
+            {{ t('common.cancel') }}
           </button>
         </div>
       </div>
@@ -317,7 +323,7 @@ function removeLibraryPlayer(id: string) {
         class="mt-6 w-full rounded-xl bg-bx-primary py-3 text-xs font-black uppercase italic tracking-widest text-black hover:brightness-110"
         @click="addSelectedFromLibrary"
       >
-        Deploy {{ selectedLibraryKeys.length }} Selected Players
+        {{ t('players.deploySelectedPlayers', { n: selectedLibraryKeys.length }) }}
       </button>
     </section>
   </div>
