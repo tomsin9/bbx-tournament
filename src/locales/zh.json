@@ -59,7 +59,7 @@
     "playersTitle": "選手",
     "playerFormHelp": "用表單管理選手，不需再用純文字貼上。",
     "playerName": "選手名稱",
-    "playerBey": "陀螺組合／名稱（可選）",
+    "playerBey": "陀螺組合／名稱（選填）",
     "addPlayer": "新增選手",
     "updatePlayer": "更新選手",
     "updateWarrior": "更新選手",
@@ -73,10 +73,11 @@
     "emptyPlayersHint": "尚無選手，請從上方新增或由資料庫導入",
     "noBeyRecorded": "未記錄陀螺",
     "notAvailable": "未提供",
-    "importSelectedWarriors": "匯入已選選手",
+    "importSelectedWarriors": "匯入 {n} 位已選選手",
     "addFromLibrary": "加入已選選手",
     "saveGoLobby": "儲存並前往大廳",
-    "nextGoLobby": "下一步：前往大廳"
+    "nextGoLobby": "下一步：前往大廳",
+    "needTwoPlayers": "請至少加入 2 位選手，先可以去大廳。"
   },
   "lobby": {
     "title": "大廳",
@@ -102,7 +103,8 @@
     "losses": "負",
     "winRate": "勝率",
     "pts": "得分",
-    "noPlayers": "請先在設定頁加入選手。"
+    "noPlayers": "請先在設定頁加入選手。",
+    "playerOptionShortId": "(#{id})"
   },
   "match": {
     "back": "返回大廳",
@@ -145,12 +147,20 @@
     "editLibraryPlayer": "編輯選手庫選手",
     "saveLibraryPlayer": "儲存選手庫選手",
     "deploySelectedPlayers": "加入 {n} 位已選選手",
-    "deleteLibraryConfirm": "要從所有賽事刪除此選手庫選手嗎？"
+    "deleteLibraryConfirm": "要從所有賽事刪除此選手庫選手嗎？",
+    "shortId": "#{id}",
+    "libraryPickHint": "先勾選選手，再為每位揀 combo，最後一次加入名單。",
+    "libraryComboLabel": "本賽事使用嘅 combo",
+    "libraryNoCombos": "暫未有已儲存 combo — 可用下方自訂。",
+    "libraryCustomCombo": "自訂 combo（可選）",
+    "libraryCustomComboHint": "如有填寫，會優先於上方 chip 用作匯入。",
+    "libraryKnownCombos": "已知 combo"
   },
   "common": {
     "cancel": "取消",
     "confirm": "確定",
     "active": "目前",
+    "inRoster": "已在名單",
     "players": "位選手",
     "ptsToWin": "分制",
     "replaceDataTitle": "覆寫本機資料？",

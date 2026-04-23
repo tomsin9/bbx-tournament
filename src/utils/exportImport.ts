@@ -74,8 +74,19 @@ function coerceMatch(v: unknown, defaultTargetPoints: number): Match | null {
   if (p1 === p2) return null
   if (typeof o.p1_score !== 'number' || typeof o.p2_score !== 'number') return null
   if (!Number.isFinite(o.p1_score) || !Number.isFinite(o.p2_score)) return null
-  if (o.status !== 'live' && o.status !== 'finished') return null
+  const rawStatus = o.status
+  const status =
+    rawStatus === 'pending' || rawStatus === 'in_progress' || rawStatus === 'completed'
+      ? rawStatus
+      : rawStatus === 'live'
+        ? 'in_progress'
+        : rawStatus === 'finished'
+          ? 'completed'
+          : null
+  if (!status) return null
   if (typeof o.timestamp !== 'string') return null
+  if (o.startedAt !== undefined && typeof o.startedAt !== 'string') return null
+  if (o.endedAt !== undefined && typeof o.endedAt !== 'string') return null
   const tp =
     typeof o.target_points === 'number' && o.target_points >= 1
       ? o.target_points
@@ -101,8 +112,10 @@ function coerceMatch(v: unknown, defaultTargetPoints: number): Match | null {
     p1_score: o.p1_score,
     p2_score: o.p2_score,
     logs,
-    status: o.status,
+    status,
     timestamp: o.timestamp,
+    startedAt: o.startedAt as string | undefined,
+    endedAt: o.endedAt as string | undefined,
     target_points: tp,
     tournament_name: o.tournament_name as string | undefined,
     winner_participant_id:

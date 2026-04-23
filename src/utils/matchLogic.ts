@@ -10,14 +10,15 @@ export function applyScore(
   winnerParticipantId: string,
   action: FinishAction,
 ): Match {
-  if (match.status !== 'live') return match
+  if (match.status === 'completed') return match
   if (winnerParticipantId !== match.p1_participant_id && winnerParticipantId !== match.p2_participant_id) return match
   const points = pointsForAction(action)
+  const now = new Date().toISOString()
   const log: MatchLogEntry = {
     winner_participant_id: winnerParticipantId,
     action,
     points,
-    timestamp: new Date().toISOString(),
+    timestamp: now,
   }
   const p1_score = match.p1_score + (winnerParticipantId === match.p1_participant_id ? points : 0)
   const p2_score = match.p2_score + (winnerParticipantId === match.p2_participant_id ? points : 0)
@@ -28,7 +29,9 @@ export function applyScore(
     p1_score,
     p2_score,
     logs: [...match.logs, log],
-    status: finished ? 'finished' : 'live',
+    status: finished ? 'completed' : 'in_progress',
+    startedAt: match.startedAt ?? now,
+    endedAt: finished ? now : undefined,
     winner_participant_id: finished
       ? p1_score > p2_score
         ? match.p1_participant_id
@@ -51,13 +54,16 @@ export function undoLast(match: Match): Match {
     p1_score: Math.max(0, p1_score),
     p2_score: Math.max(0, p2_score),
     logs,
-    status: 'live',
+    status: logs.length === 0 ? 'pending' : 'in_progress',
+    startedAt: logs.length === 0 ? undefined : match.startedAt,
+    endedAt: undefined,
+    winner_participant_id: undefined,
   }
 }
 
 export function isMatchFinished(match: Match): boolean {
   return (
-    match.status === 'finished' ||
+    match.status === 'completed' ||
     match.p1_score >= match.target_points ||
     match.p2_score >= match.target_points
   )

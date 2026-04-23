@@ -19,6 +19,9 @@ const p1 = computed(() => (match.value ? store.playerById(match.value.p1_partici
 const p2 = computed(() => (match.value ? store.playerById(match.value.p2_participant_id) : undefined))
 
 const prevStatus = ref<string | null>(null)
+const isScorable = computed(
+  () => match.value?.status === 'pending' || match.value?.status === 'in_progress',
+)
 
 const actions: { key: FinishAction; labelKey: string }[] = [
   { key: 'Spin Finish', labelKey: 'match.sf' },
@@ -37,7 +40,7 @@ function triggerHaptic(action: FinishAction) {
 }
 
 function score(winnerId: string, action: FinishAction) {
-  if (!match.value || match.value.status !== 'live') return
+  if (!match.value || !isScorable.value) return
   triggerHaptic(action)
   store.applyScore(match.value.match_id, winnerId, action)
 }
@@ -54,9 +57,9 @@ function back() {
 watch(
   () => match.value?.status,
   (st) => {
-    const wasLive = prevStatus.value === 'live'
+    const wasLive = prevStatus.value === 'pending' || prevStatus.value === 'in_progress'
     prevStatus.value = st ?? null
-    if (wasLive && st === 'finished') triggerHaptic('Xtreme Finish')
+    if (wasLive && st === 'completed') triggerHaptic('Xtreme Finish')
   },
   { immediate: true },
 )
@@ -84,7 +87,7 @@ watch(
         </div>
         <button
           type="button"
-          class="rounded-xl border border-slate-800 bg-slate-900 p-1.5 text-slate-300 transition-all active:scale-90 disabled:opacity-20 sm:p-2"
+          class="rounded-xl border border-slate-800 bg-slate-900 p-1.5 text-slate-300 transition-all opacity-100 active:scale-90 disabled:opacity-20 sm:p-2"
           :disabled="match.logs.length === 0"
           @click="undo"
         >
@@ -131,9 +134,9 @@ watch(
             class="relative flex h-12 lg:flex-col gap-2 lg:gap-0 items-center justify-center overflow-hidden rounded-lg transition-all active:scale-95 sm:h-16 sm:rounded-2xl"
             :class="[
               a.key === 'Xtreme Finish' ? 'bg-red-600' : 'bg-slate-800',
-              match.status !== 'live' ? 'grayscale opacity-30' : 'hover:brightness-110',
+              !isScorable ? 'grayscale opacity-30' : 'hover:brightness-110',
             ]"
-            :disabled="match.status !== 'live'"
+            :disabled="!isScorable"
             @click="score(p1.id, a.key)"
           >
             <span class="text-sm font-black uppercase italic text-white/80">
@@ -159,7 +162,7 @@ watch(
             <h2
               class="truncate text-lg font-black uppercase italic"
               :class="
-                match.status === 'finished' && match.p2_score < match.p1_score
+                match.status === 'completed' && match.p2_score < match.p1_score
                   ? 'text-red-400'
                   : 'text-white'
               "
@@ -169,7 +172,7 @@ watch(
             <p
               class="truncate text-sm font-bold italic"
               :class="
-                match.status === 'finished' && match.p2_score < match.p1_score
+                match.status === 'completed' && match.p2_score < match.p1_score
                   ? 'text-red-400/70'
                   : 'text-blue-400/70'
               "
@@ -183,7 +186,7 @@ watch(
           <span
             class="text-7xl font-black italic tracking-tighter tabular-nums landscape:text-4xl lg:text-8xl lg:landscape:text-8xl"
             :class="
-              match.status === 'finished' && match.p2_score < match.p1_score
+              match.status === 'completed' && match.p2_score < match.p1_score
                 ? 'text-red-400'
                 : 'text-blue-400'
             "
@@ -200,9 +203,9 @@ watch(
             class="relative flex h-12 lg:flex-col gap-2 lg:gap-0 items-center justify-center overflow-hidden rounded-lg transition-all active:scale-95 sm:h-16 sm:rounded-2xl"
             :class="[
               a.key === 'Xtreme Finish' ? 'bg-blue-600' : 'bg-slate-800',
-              match.status !== 'live' ? 'grayscale opacity-30' : 'hover:brightness-110',
+              !isScorable ? 'grayscale opacity-30' : 'hover:brightness-110',
             ]"
-            :disabled="match.status !== 'live'"
+            :disabled="!isScorable"
             @click="score(p2.id, a.key)"
           >
             <span class="text-sm font-black uppercase italic text-white/80">
@@ -218,7 +221,7 @@ watch(
 
     <transition name="winner">
       <div
-        v-if="match.status === 'finished'"
+        v-if="match.status === 'completed'"
         class="fixed inset-0 z-100 flex items-center justify-center p-4"
       >
         <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-md"></div>

@@ -73,10 +73,11 @@
     "emptyPlayersHint": "No players yet. Add from the form above or import from library.",
     "noBeyRecorded": "No Bey recorded",
     "notAvailable": "N/A",
-    "importSelectedWarriors": "Import selected players",
+    "importSelectedWarriors": "Import {n} selected players",
     "addFromLibrary": "Add selected players",
     "saveGoLobby": "Save & go to lobby",
-    "nextGoLobby": "Next: Go to Lobby"
+    "nextGoLobby": "Next: Go to Lobby",
+    "needTwoPlayers": "Add at least 2 players before going to the lobby."
   },
   "lobby": {
     "title": "Lobby",
@@ -102,7 +103,8 @@
     "losses": "L",
     "winRate": "Win%",
     "pts": "Pts",
-    "noPlayers": "Add players in Setup first."
+    "noPlayers": "Add players in Setup first.",
+    "playerOptionShortId": "(#{id})"
   },
   "match": {
     "back": "Back to lobby",
@@ -145,12 +147,20 @@
     "editLibraryPlayer": "Edit Library Player",
     "saveLibraryPlayer": "Save Library Player",
     "deploySelectedPlayers": "Deploy {n} Selected Players",
-    "deleteLibraryConfirm": "Delete this library player from all tournaments?"
+    "deleteLibraryConfirm": "Delete this library player from all tournaments?",
+    "shortId": "#{id}",
+    "libraryPickHint": "Select players, pick a combo for each, then add to roster.",
+    "libraryComboLabel": "Combo for this tournament",
+    "libraryNoCombos": "No saved combos yet — use custom below.",
+    "libraryCustomCombo": "Custom combo (optional)",
+    "libraryCustomComboHint": "If filled, this overrides the chip selection for import.",
+    "libraryKnownCombos": "Known combos"
   },
   "common": {
     "cancel": "Cancel",
     "confirm": "Confirm",
     "active": "Active",
+    "inRoster": "In roster",
     "players": "players",
     "ptsToWin": "pts to win",
     "replaceDataTitle": "Replace local data?",

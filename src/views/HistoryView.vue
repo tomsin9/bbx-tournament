@@ -1,10 +1,22 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTournamentStore } from '@/stores/tournament'
 
 const { t, locale } = useI18n()
 const store = useTournamentStore()
 store.hydrate()
+
+const sortedFinishedMatches = computed(() =>
+  [...store.finishedMatches].sort((a, b) => {
+    const ta = Date.parse(a.endedAt ?? a.timestamp)
+    const tb = Date.parse(b.endedAt ?? b.timestamp)
+    if (Number.isNaN(ta) && Number.isNaN(tb)) return 0
+    if (Number.isNaN(ta)) return 1
+    if (Number.isNaN(tb)) return -1
+    return tb - ta
+  }),
+)
 
 function label(pid: string) {
   const p = store.playerById(pid)
@@ -118,7 +130,7 @@ function downloadExport() {
     </header>
 
     <div
-      v-if="!store.finishedMatches.length"
+      v-if="!sortedFinishedMatches.length"
       class="flex flex-col items-center justify-center rounded-[2.5rem] border-2 border-dashed border-slate-800 bg-bx-surface/30 py-20 text-slate-600"
     >
       <svg class="mb-4 h-16 w-16 opacity-20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -129,7 +141,7 @@ function downloadExport() {
 
     <div v-else class="space-y-4">
       <article
-        v-for="m in store.finishedMatches"
+        v-for="m in sortedFinishedMatches"
         :key="m.match_id"
         class="group relative overflow-hidden rounded-4xl border border-slate-800 bg-slate-950/90 p-6 transition-all hover:border-bx-accent/30"
       >

@@ -34,31 +34,61 @@ export function emptyCollection(): TournamentCollection {
 }
 
 function buildCatalog(tournaments: TournamentRecord[], rawCatalog: unknown): PlayerProfile[] {
+  function mergeCombos(existing: PlayerProfile | undefined, incoming: Array<string | undefined>): string[] {
+    const seen = new Set<string>()
+    const next: string[] = []
+    for (const raw of [...(existing?.bey_combos ?? []), existing?.default_bey_name, ...incoming]) {
+      const combo = raw?.trim()
+      if (!combo || seen.has(combo)) continue
+      seen.add(combo)
+      next.push(combo)
+    }
+    return next
+  }
+
   const map = new Map<string, PlayerProfile>()
   if (Array.isArray(rawCatalog)) {
     for (const p of rawCatalog) {
       if (!p || typeof p !== 'object') continue
       const o = p as Record<string, unknown>
       if (typeof o.id !== 'string' || typeof o.name !== 'string') continue
+      const existing = map.get(o.id)
+      const rawCombos = Array.isArray(o.bey_combos)
+        ? o.bey_combos.filter((v): v is string => typeof v === 'string')
+        : []
+      const combos = mergeCombos(existing, [
+        typeof o.default_bey_name === 'string' ? o.default_bey_name : undefined,
+        ...rawCombos,
+      ])
       map.set(o.id, {
         id: o.id,
         name: o.name,
         created_at: typeof o.created_at === 'string' ? o.created_at : new Date().toISOString().slice(0, 10),
         default_bey_name: typeof o.default_bey_name === 'string' ? o.default_bey_name : undefined,
+        bey_combos: combos,
       })
     }
   }
   for (const t of tournaments) {
     const participants = t.state.participants as TournamentParticipant[]
     for (const p of participants) {
-      if (!map.has(p.player_id)) {
+      const existing = map.get(p.player_id)
+      const combos = mergeCombos(existing, [p.bey_name])
+      if (existing) {
         map.set(p.player_id, {
-          id: p.player_id,
-          name: p.name,
-          created_at: p.created_at,
-          default_bey_name: p.bey_name,
+          ...existing,
+          bey_combos: combos,
+          default_bey_name: existing.default_bey_name ?? p.bey_name,
         })
+        continue
       }
+      map.set(p.player_id, {
+        id: p.player_id,
+        name: p.name,
+        created_at: p.created_at,
+        default_bey_name: p.bey_name,
+        bey_combos: combos,
+      })
     }
   }
   return [...map.values()].sort((a, b) => a.name.localeCompare(b.name))

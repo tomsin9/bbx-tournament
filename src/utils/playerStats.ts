@@ -33,7 +33,7 @@ export function computePlayerStats(
   }
 
   for (const m of matches) {
-    if (m.status !== 'finished') continue
+    if (m.status !== 'completed') continue
     const p1Won = m.p1_score > m.p2_score
     const p2Won = m.p2_score > m.p1_score
     if (p1Won) {

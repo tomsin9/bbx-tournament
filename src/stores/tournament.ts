@@ -19,6 +19,22 @@ function newId(prefix: string): string {
   return `${prefix}-${crypto.randomUUID().slice(0, 8)}`
 }
 
+function uniqueCombos(values: Array<string | undefined>): string[] {
+  const seen = new Set<string>()
+  const result: string[] = []
+  for (const raw of values) {
+    const combo = raw?.trim()
+    if (!combo || seen.has(combo)) continue
+    seen.add(combo)
+    result.push(combo)
+  }
+  return result
+}
+
+function mergeProfileCombos(profile: PlayerProfile, beyName?: string): string[] {
+  return uniqueCombos([...(profile.bey_combos ?? []), profile.default_bey_name, beyName])
+}
+
 export const useTournamentStore = defineStore('tournament', () => {
   const tournaments = ref<TournamentRecord[]>([])
   const activeTournamentId = ref<string | null>(null)
@@ -133,9 +149,11 @@ export const useTournamentStore = defineStore('tournament', () => {
     for (const p of playerCatalog.value) map.set(p.id, p)
     return map
   })
-  const liveMatches = computed(() => state.value.matches.filter((m) => m.status === 'live'))
+  const liveMatches = computed(() =>
+    state.value.matches.filter((m) => m.status === 'pending' || m.status === 'in_progress'),
+  )
   const finishedMatches = computed(() =>
-    state.value.matches.filter((m) => m.status === 'finished'),
+    state.value.matches.filter((m) => m.status === 'completed'),
   )
 
   function newTournament() {
@@ -188,17 +206,27 @@ export const useTournamentStore = defineStore('tournament', () => {
 
     const catalogIdx = playerCatalog.value.findIndex((p) => p.id === profileId)
     if (catalogIdx >= 0) {
+      const current = playerCatalog.value[catalogIdx]!
+      const combos = mergeProfileCombos(current, bey_name)
       const nextCatalog = [...playerCatalog.value]
       nextCatalog[catalogIdx] = {
-        ...nextCatalog[catalogIdx]!,
+        ...current,
         name,
-        default_bey_name: bey_name,
+        default_bey_name: current.default_bey_name ?? bey_name,
+        bey_combos: combos,
       }
       playerCatalog.value = nextCatalog
     } else {
+      const combos = uniqueCombos([bey_name])
       playerCatalog.value = [
         ...playerCatalog.value,
-        { id: profileId, name, default_bey_name: bey_name, created_at: today },
+        {
+          id: profileId,
+          name,
+          default_bey_name: bey_name,
+          bey_combos: combos,
+          created_at: today,
+        },
       ]
     }
 
@@ -230,15 +258,44 @@ export const useTournamentStore = defineStore('tournament', () => {
     }))
   }
 
-  function addPlayersFromLibrary(playersToAdd: Array<PlayerProfile>) {
+  function addPlayersFromLibrary(
+    playersToAdd: Array<{ profile: PlayerProfile; bey_name?: string }>,
+  ) {
     const today = new Date().toISOString().slice(0, 10)
+    for (const row of playersToAdd) {
+      const p = row.profile
+      const name = p.name.trim()
+      if (!name) continue
+      const chosen =
+        row.bey_name !== undefined
+          ? row.bey_name.trim() || undefined
+          : (p.default_bey_name ?? p.bey_combos?.[0])?.trim() || undefined
+
+      const catalogIdx = playerCatalog.value.findIndex((c) => c.id === p.id)
+      if (catalogIdx >= 0) {
+        const current = playerCatalog.value[catalogIdx]!
+        const combos = mergeProfileCombos(current, chosen)
+        const nextCatalog = [...playerCatalog.value]
+        nextCatalog[catalogIdx] = {
+          ...current,
+          default_bey_name: current.default_bey_name ?? chosen,
+          bey_combos: combos,
+        }
+        playerCatalog.value = nextCatalog
+      }
+    }
+
     updateState((s) => {
       const existing = new Set(s.participants.map((p) => p.player_id))
       const next = [...s.participants]
-      for (const p of playersToAdd) {
+      for (const row of playersToAdd) {
+        const p = row.profile
         const name = p.name.trim()
-        const bey_name = p.default_bey_name?.trim() || undefined
         if (!name) continue
+        const bey_name =
+          row.bey_name !== undefined
+            ? row.bey_name.trim() || undefined
+            : (p.default_bey_name ?? p.bey_combos?.[0])?.trim() || undefined
         if (existing.has(p.id)) continue
         existing.add(p.id)
         next.push({
@@ -261,8 +318,10 @@ export const useTournamentStore = defineStore('tournament', () => {
 
     const idx = playerCatalog.value.findIndex((p) => p.id === id)
     if (idx === -1) return
+    const current = playerCatalog.value[idx]!
+    const combos = uniqueCombos([...(current.bey_combos ?? []), current.default_bey_name, default_bey_name])
     const nextCatalog = [...playerCatalog.value]
-    nextCatalog[idx] = { ...nextCatalog[idx]!, name, default_bey_name }
+    nextCatalog[idx] = { ...current, name, default_bey_name, bey_combos: combos }
     playerCatalog.value = nextCatalog
 
     tournaments.value = tournaments.value.map((t) => ({
@@ -271,7 +330,7 @@ export const useTournamentStore = defineStore('tournament', () => {
       state: {
         ...t.state,
         participants: t.state.participants.map((p) =>
-          p.player_id === id ? { ...p, name, bey_name: p.bey_name ?? default_bey_name } : p,
+          p.player_id === id ? { ...p, name } : p,
         ),
       },
     }))
@@ -343,7 +402,7 @@ export const useTournamentStore = defineStore('tournament', () => {
       p1_score: 0,
       p2_score: 0,
       logs: [],
-      status: 'live',
+      status: 'pending',
       timestamp: new Date().toISOString(),
       target_points: state.value.target_points,
       tournament_name: state.value.tournament_name || undefined,

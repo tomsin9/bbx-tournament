@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import { useTournamentStore } from '@/stores/tournament'
 import type { FinishAction } from '@/types/bxtm'
 import { computePlayerStats, winRate } from '@/utils/playerStats'
+import { shortPlayerIdSuffix } from '@/utils/playerIdDisplay'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -38,6 +39,11 @@ const podiumNameClasses = ['text-amber-300', 'text-slate-200', 'text-orange-300'
 
 function playerName(pid: string) {
   return store.playerById(pid)?.name ?? pid
+}
+
+function participantShortId(participantId: string) {
+  const p = store.playerById(participantId)
+  return p ? shortPlayerIdSuffix(p.player_id) : shortPlayerIdSuffix(participantId)
 }
 
 function pickRandomPlayer(excludeId?: string) {
@@ -150,7 +156,11 @@ const pct = (pid: string) => {
             >
               <option value="" disabled>{{ t('lobby.selectWarrior') }}</option>
               <option v-for="pl in store.players" :key="pl.id" :value="pl.id" :disabled="pl.id === p2">
-                {{ pl.name }} {{ pl.bey_name ? `(${pl.bey_name})` : '' }}
+                {{
+                  pl.name +
+                    ' - ' +
+                    (pl.bey_name ? pl.bey_name : '')
+                }}
               </option>
             </select>
             <button
@@ -185,7 +195,11 @@ const pct = (pid: string) => {
             >
               <option value="" disabled>{{ t('lobby.selectWarrior') }}</option>
               <option v-for="pl in store.players" :key="pl.id" :value="pl.id" :disabled="pl.id === p1">
-                {{ pl.name }} {{ pl.bey_name ? `(${pl.bey_name})` : '' }}
+                {{
+                  pl.name +
+                    ' - ' +
+                    (pl.bey_name ? pl.bey_name : '')
+                }}
               </option>
             </select>
             <button
@@ -235,11 +249,17 @@ const pct = (pid: string) => {
           <div class="flex items-center gap-6">
             <div class="text-right">
               <p class="text-sm font-bold text-white">{{ playerName(m.p1_participant_id) }}</p>
+              <p class="font-mono text-[10px] font-semibold text-slate-500">
+                {{ t('players.shortId', { id: participantShortId(m.p1_participant_id) }) }}
+              </p>
               <p class="text-2xl font-black text-white">{{ m.p1_score }}</p>
             </div>
             <div class="text-xs font-black text-bx-primary">VS</div>
             <div class="text-left">
               <p class="text-sm font-bold text-white">{{ playerName(m.p2_participant_id) }}</p>
+              <p class="font-mono text-[10px] font-semibold text-slate-500">
+                {{ t('players.shortId', { id: participantShortId(m.p2_participant_id) }) }}
+              </p>
               <p class="text-2xl font-black text-white">{{ m.p2_score }}</p>
             </div>
           </div>
@@ -280,6 +300,9 @@ const pct = (pid: string) => {
           >
             {{ pl.name }}
           </p>
+          <p class="font-mono text-[10px] font-semibold text-slate-500">
+            {{ t('players.shortId', { id: shortPlayerIdSuffix(pl.player_id) }) }}
+          </p>
           <p class="text-sm text-slate-500">{{ pl.bey_name || t('match.noBey') }}</p>
           <p class="mt-3 text-xs text-slate-400">
             {{ t('lobby.record') }}:
@@ -297,16 +320,16 @@ const pct = (pid: string) => {
         <table class="w-full border-collapse text-left text-sm">
           <thead>
             <tr class="border-b border-slate-800 bg-slate-900/50">
-              <th class="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
+              <th class="px-6 py-4 text-xs font-black uppercase tracking-widest text-slate-500">
                 {{ t('lobby.warrior') }}
               </th>
-              <th class="px-4 py-4 text-center text-[10px] font-black uppercase tracking-widest text-slate-500">
+              <th class="px-4 py-4 text-center text-xs font-black uppercase tracking-widest text-slate-500">
                 {{ t('lobby.recordShort') }}
               </th>
-              <th class="px-4 py-4 text-center text-[10px] font-black uppercase tracking-widest text-slate-500">
+              <th class="px-4 py-4 text-center text-xs font-black uppercase tracking-widest text-slate-500">
                 {{ t('lobby.winRate') }}
               </th>
-              <th class="px-4 py-4 text-center text-[10px] font-black uppercase tracking-widest text-slate-500">
+              <th class="px-4 py-4 text-center text-xs font-black uppercase tracking-widest text-slate-500">
                 {{ t('lobby.pts') }}
               </th>
             </tr>
@@ -333,7 +356,10 @@ const pct = (pid: string) => {
                 >
                   {{ pl.name }}
                 </div>
-                <div class="text-[10px] font-medium text-slate-500">{{ pl.bey_name || '-' }}</div>
+                <div class="font-mono text-[10px] font-semibold text-slate-500">
+                  {{ t('players.shortId', { id: shortPlayerIdSuffix(pl.player_id) }) }}
+                </div>
+                <div class="text-sm font-medium text-slate-500">{{ pl.bey_name || '-' }}</div>
               </td>
               <td class="px-4 py-4 text-center tabular-nums">
                 <span class="font-bold text-bx-primary">{{ stats.get(pl.id)?.wins ?? 0 }}</span>

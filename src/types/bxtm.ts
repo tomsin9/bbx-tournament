@@ -3,6 +3,7 @@ export interface PlayerProfile {
   name: string
   created_at: string
   default_bey_name?: string
+  bey_combos?: string[]
 }
 
 export interface TournamentParticipant {
@@ -13,7 +14,7 @@ export interface TournamentParticipant {
   bey_name?: string
 }
 
-export type MatchStatus = 'live' | 'finished'
+export type MatchStatus = 'pending' | 'in_progress' | 'completed'
 
 export type FinishAction =
   | 'Over Finish'
@@ -37,6 +38,8 @@ export interface Match {
   logs: MatchLogEntry[]
   status: MatchStatus
   timestamp: string
+  startedAt?: string
+  endedAt?: string
   target_points: number
   tournament_name?: string
   winner_participant_id?: string
