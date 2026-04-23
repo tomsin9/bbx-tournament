@@ -83,11 +83,11 @@ async function onFile(e: Event) {
       class="sticky top-0 z-50 border-b border-slate-800 bg-slate-950/80 backdrop-blur-md"
     >
       <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-        <RouterLink to="/" class="group flex items-center gap-2">
+        <RouterLink to="/" class="navbar-logo-link group flex items-center gap-2">
           <div
             class="flex h-7 w-7 text-lg items-center justify-center rounded-lg bg-bx-primary font-bold font-sans text-black shadow-lg shadow-bx-primary/20"
           >
-            X
+            B
           </div>
           <img
             src="/beybladex-logo.png"

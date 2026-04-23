@@ -155,6 +155,23 @@ export const useTournamentStore = defineStore('tournament', () => {
   const finishedMatches = computed(() =>
     state.value.matches.filter((m) => m.status === 'completed'),
   )
+  const allFinishedMatches = computed(() => {
+    return tournaments.value.flatMap((t) => {
+      const participantNameById = new Map(
+        t.state.participants.map((p) => [p.id, p.name] as const),
+      )
+      const tournamentName = t.state.tournament_name?.trim() || 'Untitled'
+      return t.state.matches
+        .filter((m) => m.status === 'completed')
+        .map((m) => ({
+          ...m,
+          tournament_id: t.id,
+          tournament_name: m.tournament_name?.trim() || tournamentName,
+          p1_name: participantNameById.get(m.p1_participant_id) ?? m.p1_participant_id,
+          p2_name: participantNameById.get(m.p2_participant_id) ?? m.p2_participant_id,
+        }))
+    })
+  })
 
   function newTournament() {
     const now = new Date().toISOString()
@@ -310,7 +327,12 @@ export const useTournamentStore = defineStore('tournament', () => {
     })
   }
 
-  function updatePlayerProfile(payload: { id: string; name: string; default_bey_name?: string }) {
+  function updatePlayerProfile(payload: {
+    id: string
+    name: string
+    default_bey_name?: string
+    bey_combos?: string[]
+  }) {
     const id = payload.id
     const name = payload.name.trim()
     const default_bey_name = payload.default_bey_name?.trim() || undefined
@@ -319,7 +341,9 @@ export const useTournamentStore = defineStore('tournament', () => {
     const idx = playerCatalog.value.findIndex((p) => p.id === id)
     if (idx === -1) return
     const current = playerCatalog.value[idx]!
-    const combos = uniqueCombos([...(current.bey_combos ?? []), current.default_bey_name, default_bey_name])
+    const combos = payload.bey_combos
+      ? uniqueCombos([...payload.bey_combos, default_bey_name])
+      : uniqueCombos([...(current.bey_combos ?? []), current.default_bey_name, default_bey_name])
     const nextCatalog = [...playerCatalog.value]
     nextCatalog[idx] = { ...current, name, default_bey_name, bey_combos: combos }
     playerCatalog.value = nextCatalog
@@ -452,6 +476,7 @@ export const useTournamentStore = defineStore('tournament', () => {
     playerLibrary,
     liveMatches,
     finishedMatches,
+    allFinishedMatches,
     newTournament,
     switchTournament,
     deleteTournament,

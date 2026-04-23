@@ -15,6 +15,7 @@ const editingId = ref<string | null>(null)
 const libraryEditingId = ref<string | null>(null)
 const libraryName = ref('')
 const libraryBey = ref('')
+const libraryCombosText = ref('')
 const librarySelectedProfileIds = ref<string[]>([])
 const libraryComboPick = ref<Record<string, string>>({})
 const libraryCustomCombo = ref<Record<string, string>>({})
@@ -22,6 +23,14 @@ const playerNameInput = ref<HTMLInputElement | null>(null)
 
 const canAddPlayer = computed(() => playerName.value.trim().length > 0)
 const libraryOptions = computed(() => store.playerLibrary)
+const editingComboOptions = computed(() => {
+  if (!editingId.value) return [] as string[]
+  const participant = store.players.find((p) => p.id === editingId.value)
+  if (!participant) return [] as string[]
+  const profile = store.profileById(participant.player_id)
+  if (!profile) return [] as string[]
+  return profileComboOptions(profile)
+})
 const libraryDeployRows = computed(() => {
   const set = new Set(librarySelectedProfileIds.value)
   return libraryOptions.value
@@ -58,6 +67,18 @@ function profileComboOptions(p: Pick<PlayerProfile, 'default_bey_name' | 'bey_co
     if (!c || seen.has(c)) continue
     seen.add(c)
     out.push(c)
+  }
+  return out
+}
+
+function parseComboEditorText(input: string): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const raw of input.split('\n')) {
+    const combo = raw.trim()
+    if (!combo || seen.has(combo)) continue
+    seen.add(combo)
+    out.push(combo)
   }
   return out
 }
@@ -127,6 +148,10 @@ function editPlayer(player: TournamentParticipant) {
   void focusPlayerNameInput()
 }
 
+function pickExistingCombo(combo: string) {
+  playerBey.value = combo
+}
+
 function removePlayer(id: string) {
   if (!confirm(t('setup.removeConfirm'))) return
   store.removePlayer(id)
@@ -147,12 +172,14 @@ function startEditLibraryPlayer(id: string) {
   libraryEditingId.value = id
   libraryName.value = profile.name
   libraryBey.value = profile.default_bey_name ?? ''
+  libraryCombosText.value = profileComboOptions(profile).join('\n')
 }
 
 function cancelEditLibraryPlayer() {
   libraryEditingId.value = null
   libraryName.value = ''
   libraryBey.value = ''
+  libraryCombosText.value = ''
 }
 
 function saveLibraryPlayer() {
@@ -161,6 +188,7 @@ function saveLibraryPlayer() {
     id: libraryEditingId.value,
     name: libraryName.value,
     default_bey_name: libraryBey.value,
+    bey_combos: parseComboEditorText(libraryCombosText.value),
   })
   cancelEditLibraryPlayer()
 }
@@ -222,6 +250,27 @@ function removeLibraryPlayer(id: string) {
               :placeholder="t('setup.playerBey')"
               @keyup.enter="submitPlayer"
             />
+            <div v-if="editingId && editingComboOptions.length" class="space-y-1">
+              <p class="px-1 text-[10px] font-black uppercase tracking-widest text-slate-600">
+                {{ t('players.libraryKnownCombos') }}
+              </p>
+              <div class="flex flex-wrap gap-1.5">
+                <button
+                  v-for="combo in editingComboOptions"
+                  :key="'edit-combo-' + combo"
+                  type="button"
+                  class="rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wide transition-all active:scale-95"
+                  :class="
+                    playerBey.trim() === combo
+                      ? 'border-bx-primary bg-bx-primary/15 text-bx-primary'
+                      : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-bx-primary/40'
+                  "
+                  @click="pickExistingCombo(combo)"
+                >
+                  {{ combo }}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -248,7 +297,7 @@ function removeLibraryPlayer(id: string) {
 
     <section class="space-y-4">
       <h3 class="px-2 text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">
-        {{ t('setup.currentRoster') }}
+        {{ t('setup.currentRoster') }} ({{ store.players.length }})
       </h3>
 
       <div
@@ -324,6 +373,17 @@ function removeLibraryPlayer(id: string) {
             type="text"
             class="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-bx-primary focus:outline-none"
             :placeholder="t('setup.playerBey')"
+          />
+        </div>
+        <div class="space-y-1">
+          <label class="px-1 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+            {{ t('players.libraryComboEditor') }}
+          </label>
+          <textarea
+            v-model="libraryCombosText"
+            rows="4"
+            class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white placeholder:text-slate-700 focus:border-bx-primary focus:outline-none"
+            :placeholder="t('players.libraryComboEditorHint')"
           />
         </div>
         <div class="flex gap-2">

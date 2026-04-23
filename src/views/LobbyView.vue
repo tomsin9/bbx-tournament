@@ -22,11 +22,13 @@ const rankedPlayers = computed(() =>
   [...store.players].sort((a, b) => {
     const sa = stats.value.get(a.id)
     const sb = stats.value.get(b.id)
-    const winRateDiff = (sb ? winRate(sb) : 0) - (sa ? winRate(sa) : 0)
-    if (Math.abs(winRateDiff) > 0.0001) return winRateDiff
+    const winsDiff = (sb?.wins ?? 0) - (sa?.wins ?? 0)
+    if (winsDiff !== 0) return winsDiff
+    const lossesDiff = (sa?.losses ?? 0) - (sb?.losses ?? 0)
+    if (lossesDiff !== 0) return lossesDiff
     const pointsDiff = (sb?.totalPointsScored ?? 0) - (sa?.totalPointsScored ?? 0)
     if (pointsDiff !== 0) return pointsDiff
-    return (sb?.wins ?? 0) - (sa?.wins ?? 0)
+    return a.name.localeCompare(b.name)
   }),
 )
 const topPlayers = computed(() => rankedPlayers.value.slice(0, 3))
@@ -294,16 +296,20 @@ const pct = (pid: string) => {
               {{ pct(pl.id) }}
             </span>
           </div>
-          <p
-            class="truncate font-bold"
-            :class="podiumNameClasses[idx] ?? 'text-white'"
-          >
-            {{ pl.name }}
-          </p>
-          <p class="font-mono text-[10px] font-semibold text-slate-500">
-            {{ t('players.shortId', { id: shortPlayerIdSuffix(pl.player_id) }) }}
-          </p>
-          <p class="text-sm text-slate-500">{{ pl.bey_name || t('match.noBey') }}</p>
+
+          <div class="flex items-end gap-2">
+            <p
+              class="truncate font-bold inline-block"
+              :class="podiumNameClasses[idx] ?? 'text-white'"
+            >
+              {{ pl.name }}
+            </p>
+            <p class="font-mono text-[10px] font-semibold text-slate-600 inline-block">
+              {{ t('players.shortId', { id: shortPlayerIdSuffix(pl.player_id) }) }}
+            </p>
+          </div>
+
+          <p class="text-xs text-slate-400">{{ pl.bey_name || t('match.noBey') }}</p>
           <p class="mt-3 text-xs text-slate-400">
             {{ t('lobby.record') }}:
             <span class="font-bold text-bx-primary">{{ stats.get(pl.id)?.wins ?? 0 }}</span>
@@ -350,16 +356,18 @@ const pct = (pid: string) => {
               "
             >
               <td class="px-6 py-4">
-                <div
-                  class="font-bold"
-                  :class="podiumNameClasses[idx] ?? 'text-white'"
-                >
-                  {{ pl.name }}
+                <div class="flex items-end gap-2">
+                  <div
+                    class="font-bold inline-block"
+                    :class="podiumNameClasses[idx] ?? 'text-white'"
+                  >
+                    {{ pl.name }}
+                  </div>
+                  <div class="font-mono text-[10px] font-semibold text-slate-600 inline-block">
+                    {{ t('players.shortId', { id: shortPlayerIdSuffix(pl.player_id) }) }}
+                  </div>
                 </div>
-                <div class="font-mono text-[10px] font-semibold text-slate-500">
-                  {{ t('players.shortId', { id: shortPlayerIdSuffix(pl.player_id) }) }}
-                </div>
-                <div class="text-sm font-medium text-slate-500">{{ pl.bey_name || '-' }}</div>
+                <div class="text-sm font-medium text-slate-400">{{ pl.bey_name || '-' }}</div>
               </td>
               <td class="px-4 py-4 text-center tabular-nums">
                 <span class="font-bold text-bx-primary">{{ stats.get(pl.id)?.wins ?? 0 }}</span>

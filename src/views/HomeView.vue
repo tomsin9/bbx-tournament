@@ -204,7 +204,7 @@ function removeTournament(id: string) {
           <div class="flex items-center gap-2">
             <button
               type="button"
-              class="p-2 text-slate-400 hover:text-white"
+              class="p-2 text-slate-400 hover:text-white rounded-lg transition-colors"
               @click="openTournament(item.id)"
             >
               <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -224,7 +224,7 @@ function removeTournament(id: string) {
             </button>
             <button
               type="button"
-              class="p-2 text-slate-600 hover:text-bx-primary disabled:opacity-0"
+              class="p-2 text-slate-600 hover:text-bx-primary disabled:opacity-0 rounded-lg transition-colors"
               @click="removeTournament(item.id)"
             >
               <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

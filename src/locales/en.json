@@ -126,6 +126,9 @@
     "subtitle": "Relive every glorious match.",
     "empty": "No finished matches yet.",
     "export": "Export JSON",
+    "filterLabel": "Tournament",
+    "allTournaments": "All tournaments",
+    "tournament": "Tournament",
     "vs": "vs",
     "score": "Score",
     "winner": "Winner: {name}",
@@ -154,7 +157,9 @@
     "libraryNoCombos": "No saved combos yet — use custom below.",
     "libraryCustomCombo": "Custom combo (optional)",
     "libraryCustomComboHint": "If filled, this overrides the chip selection for import.",
-    "libraryKnownCombos": "Known combos"
+    "libraryKnownCombos": "Known combos",
+    "libraryComboEditor": "Saved combos (one per line)",
+    "libraryComboEditorHint": "Type one combo per line. Empty lines are ignored."
   },
   "common": {
     "cancel": "Cancel",
