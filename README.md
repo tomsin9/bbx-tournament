@@ -5,7 +5,7 @@ It supports the full event flow from participant setup to match progression, his
 
 ## Live Demo
 
-`https://tomsin9.github.io/bbx-tournament/`
+`https://bbxbattle.win/`
 
 ## Core Features
 
