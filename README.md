@@ -5,7 +5,7 @@ It supports the full event flow from participant setup to match progression, his
 
 ## Live Demo
 
-`https://bbxbattle.win/`
+[https://bbxbattle.win](https://bbxbattle.win)
 
 ## Core Features
 

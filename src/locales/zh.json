@@ -20,7 +20,7 @@
     "match": "對戰"
   },
   "home": {
-    "tagline": "本機優先的 BBX 計分工具。無伺服器，資料只留在你的瀏覽器。",
+    "tagline": "本機優先的 Beyblade X 比賽計分工具。資料只留在你的瀏覽器。",
     "newTournament": "新建比賽",
     "createNewTournament": "+ 開始新比賽",
     "newTournamentHint": "建立全新賽程與名單。",
@@ -112,7 +112,7 @@
     "battleResult": "對戰結果",
     "winnerIs": "勝方：{name}",
     "returnToLobby": "返回大廳",
-    "noBey": "未設定陀螺",
+    "noBey": "未指定陀螺",
     "of": "擊飛勝利",
     "bf": "爆裂勝利",
     "xf": "極限勝利",

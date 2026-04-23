@@ -20,7 +20,7 @@
     "match": "Match"
   },
   "home": {
-    "tagline": "Local-first scoring for BBX. No server — your data stays in the browser.",
+    "tagline": "Local-first scoring for Beyblade X. Your data stays in the browser.",
     "newTournament": "New tournament",
     "createNewTournament": "+ Start New Tournament",
     "newTournamentHint": "Create a new bracket and player roster.",
@@ -112,7 +112,7 @@
     "battleResult": "Battle Result",
     "winnerIs": "Winner: {name}",
     "returnToLobby": "Return to lobby",
-    "noBey": "No Bey",
+    "noBey": "No Bey specified",
     "of": "Over Finish",
     "bf": "Burst Finish",
     "xf": "Xtreme Finish",

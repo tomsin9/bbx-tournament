@@ -280,7 +280,7 @@ const pct = (pid: string) => {
           >
             {{ pl.name }}
           </p>
-          <p class="text-xs text-slate-500">{{ pl.bey_name || t('match.noBey') }}</p>
+          <p class="text-sm text-slate-500">{{ pl.bey_name || t('match.noBey') }}</p>
           <p class="mt-3 text-xs text-slate-400">
             {{ t('lobby.record') }}:
             <span class="font-bold text-bx-primary">{{ stats.get(pl.id)?.wins ?? 0 }}</span>
