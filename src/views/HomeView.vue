@@ -108,7 +108,24 @@ function removeTournament(id: string) {
       </p>
     </header>
 
-    <section v-if="!hasCurrentTournament" class="grid gap-4">
+    <section v-if="!hasCurrentTournament" class="grid gap-4 sm:grid-cols-2">
+      <button
+        type="button"
+        class="group relative flex flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-bx-primary/40 bg-bx-primary/10 p-10 transition-all hover:border-bx-primary hover:bg-bx-primary/20"
+        @click="goQuickMatch"
+      >
+        <div
+          class="flex h-16 w-16 items-center justify-center rounded-2xl bg-bx-primary text-black shadow-lg shadow-bx-primary/20 transition-transform group-hover:scale-110"
+        >
+          <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+        </div>
+        <div class="text-center">
+          <h3 class="text-lg font-bold text-white">{{ t('home.quickMatch') }}</h3>
+          <p class="text-sm text-slate-500">{{ t('home.newTournamentHint') }}</p>
+        </div>
+      </button>
       <button
         type="button"
         class="group relative flex flex-col items-center justify-center gap-4 rounded-3xl border-2 border-dashed border-slate-800 bg-slate-900/50 p-10 transition-all hover:border-bx-primary hover:bg-slate-900"
@@ -163,8 +180,9 @@ function removeTournament(id: string) {
       </div>
     </section>
 
-    <section v-if="hasCurrentTournament" class="grid gap-3 sm:grid-cols-3">
+    <section class="grid gap-3 sm:grid-cols-3">
       <button
+        v-if="hasCurrentTournament"
         type="button"
         class="rounded-2xl border border-bx-primary/40 bg-bx-primary/10 px-5 py-3 text-sm font-semibold text-bx-primary transition hover:bg-bx-primary/20"
         @click="goQuickMatch"
@@ -172,6 +190,7 @@ function removeTournament(id: string) {
         {{ t('home.quickMatch') }}
       </button>
       <button
+        v-if="hasCurrentTournament"
         type="button"
         class="rounded-2xl border border-blue-500/40 bg-blue-500/10 px-5 py-3 text-sm font-semibold text-blue-300 transition hover:bg-blue-500/20"
         @click="onNewTournament"
@@ -179,6 +198,7 @@ function removeTournament(id: string) {
         {{ t('home.createNewTournament') }}
       </button>
       <button
+        v-if="hasCurrentTournament"
         type="button"
         class="rounded-2xl border border-slate-700 bg-slate-900/60 px-5 py-3 text-sm font-semibold text-slate-100 transition hover:bg-slate-800"
         @click="goSetup"

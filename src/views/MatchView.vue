@@ -176,11 +176,14 @@ watch(
 </script>
 
 <template>
-  <div v-if="activeMatch && activeP1 && activeP2" class="h-screen flex flex-col overflow-hidden bg-slate-950 p-3 text-white sm:p-4">
-    <header class="mb-2 flex shrink-0 items-center justify-between sm:mb-3">
+  <div
+    v-if="activeMatch && activeP1 && activeP2"
+    class="flex min-h-dvh flex-col overflow-hidden bg-slate-950 p-2.5 text-white sm:p-4"
+  >
+    <header class="mb-1.5 flex shrink-0 flex-col items-stretch gap-1.5 sm:mb-2 sm:gap-2 md:flex-row md:items-center md:justify-between">
       <button
         type="button"
-        class="flex items-center gap-1.5 p-2 text-slate-400 transition-colors hover:text-white"
+        class="inline-flex w-fit items-center gap-1.5 p-2 text-slate-400 transition-colors hover:text-white"
         @click="back"
       >
         <svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -189,27 +192,10 @@ watch(
         <span class="text-xs font-black uppercase tracking-widest">{{ t('match.back') }}</span>
       </button>
 
-      <div class="flex items-center gap-3">
-        <div class="rounded-full border border-white/10 bg-white/5 px-3 py-1">
-          <span class="text-xs font-black uppercase tracking-tighter text-slate-300">
-            {{ t('match.targetHint', { n: activeMatch.target_points }) }}
-          </span>
-        </div>
+      <div class="flex flex-1 flex-wrap items-center gap-1 sm:gap-1.5 md:justify-end md:gap-2">
         <label
           v-if="isQuickMatch"
-          class="flex items-center gap-2 rounded-full border border-bx-primary/50 bg-bx-primary/10 px-3 py-1 text-xs font-black uppercase tracking-wider text-bx-primary"
-        >
-          {{ t('match.target') }}
-          <input
-            v-model.number="quickTargetPoints"
-            type="number"
-            min="1"
-            class="w-14 rounded-md border border-bx-primary/40 bg-slate-950 px-2 py-0.5 text-right text-white outline-none"
-          >
-        </label>
-        <label
-          v-if="isQuickMatch"
-          class="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-black uppercase tracking-wider text-slate-200"
+          class="flex h-8 items-center gap-1 rounded-full border border-white/20 bg-white/5 px-2 text-xs font-black uppercase tracking-wider text-slate-200 sm:h-9 sm:gap-1.5 sm:px-2.5 md:gap-2 md:px-3"
         >
           <input
             v-model="includeQuickInHistory"
@@ -218,20 +204,40 @@ watch(
           >
           {{ t('match.saveToHistory') }}
         </label>
+
+        <label
+          v-if="isQuickMatch"
+          class="flex h-8 items-center gap-1 rounded-full border border-bx-primary/50 bg-bx-primary/10 px-2 text-xs font-black uppercase tracking-wider text-bx-primary sm:h-9 sm:gap-1.5 sm:px-2.5 md:gap-2 md:px-3"
+        >
+          {{ t('match.target') }}
+          <input
+            v-model.number="quickTargetPoints"
+            type="number"
+            min="1"
+            class="w-11 rounded-md border border-bx-primary/40 bg-slate-950 px-1.5 py-0.5 text-right text-white outline-none sm:w-12 md:w-14"
+          >
+        </label>
+
+        <div class="flex h-8 items-center rounded-full border border-white/10 bg-white/5 px-2 sm:h-9 sm:px-2.5 md:px-3">
+          <span class="text-xs font-black uppercase tracking-tighter text-slate-300">
+            {{ t('match.targetHint', { n: activeMatch.target_points }) }}
+          </span>
+        </div>
+        
         <button
           type="button"
-          class="rounded-xl border border-slate-800 bg-slate-900 p-1.5 text-slate-300 transition-all opacity-100 active:scale-90 disabled:opacity-20 sm:p-2"
+          class="ml-auto flex h-8 shrink-0 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 px-2 text-slate-300 transition-all opacity-100 active:scale-90 disabled:opacity-20 sm:ml-1 sm:h-9 sm:px-2.5"
           :disabled="activeMatch.logs.length === 0"
           @click="undo"
         >
-          <svg class="h-4 w-4 text-bx-primary sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg class="h-4 w-4 text-bx-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
           </svg>
         </button>
       </div>
     </header>
 
-    <div class="grid min-h-0 flex-1 grid-cols-1 grid-rows-2 gap-2 pb-2 landscape:grid-cols-2 landscape:grid-rows-1 sm:grid-cols-2 sm:grid-rows-1">
+    <div class="grid min-h-0 flex-1 grid-cols-1 grid-rows-2 gap-1.5 py-2 landscape:grid-cols-2 landscape:grid-rows-1 sm:gap-2 sm:pb-2 lg:grid-cols-2 lg:grid-rows-1">
       <section
         class="relative flex h-full min-h-0 flex-col overflow-hidden rounded-3xl transition-all duration-300 sm:rounded-[2.5rem] border border-white/10 bg-slate-900/40"
         :class="
@@ -240,12 +246,12 @@ watch(
             : 'bg-slate-900/40 ring-1 ring-white/10'
         "
       >
-        <div class="flex h-18 items-center justify-between border-b border-white/5 bg-red-500/10 px-3 py-2.5 sm:px-4 sm:py-3.5">
+        <div class="flex min-h-14 items-center justify-between border-b border-white/5 bg-red-500/10 px-3 py-1.5 sm:min-h-15 sm:py-2 md:min-h-16 md:px-4 md:py-2.5">
           <div class="flex min-w-0 flex-1 flex-col justify-center">
-            <h2 class="truncate text-lg font-black uppercase italic sm:text-base">
+            <h2 class="truncate text-base font-black uppercase italic sm:text-lg md:text-xl">
               {{ activeP1.name }}
             </h2>
-            <p class="truncate text-sm font-bold italic text-red-400/70">
+            <p class="truncate text-xs font-bold italic text-red-400/70 sm:text-sm">
               {{ activeP1.bey_name || t('match.noBey') }}
             </p>
           </div>
@@ -253,18 +259,18 @@ watch(
 
         <div class=" min-h-0 flex-1 items-center justify-center flex landscape:flex">
           <span
-            class="text-7xl text-red-400 font-black italic tracking-tighter tabular-nums landscape:text-4xl lg:text-8xl lg:landscape:text-8xl"
+            class="text-7xl font-black italic tracking-tighter tabular-nums landscape:text-4xl lg:text-8xl lg:landscape:text-8xl text-red-400"
           >
             {{ activeMatch.p1_score }}
           </span>
         </div>
 
-        <div class="my-1.5 grid grid-cols-2 gap-1.5 bg-black/20 p-1.5 landscape:mt-auto sm:mt-2 sm:gap-2 sm:p-2">
+        <div class="my-1 grid grid-cols-2 gap-1 bg-black/20 p-1 landscape:mt-auto sm:my-1.5 sm:gap-1.5 sm:p-1.5 md:mt-2 md:gap-2 md:p-2">
           <button
             v-for="a in actions"
             :key="a.key + '-p1'"
             type="button"
-            class="relative flex h-12 lg:flex-col gap-2 lg:gap-0 items-center justify-center overflow-hidden rounded-lg transition-all active:scale-95 sm:h-16 sm:rounded-2xl"
+            class="score-action-btn relative flex h-10 items-center justify-center gap-1 overflow-hidden rounded-lg transition-all active:scale-95 landscape:h-9 landscape:gap-0.5 sm:h-11 sm:gap-1.5 md:h-14 md:gap-2 md:rounded-2xl lg:h-20 lg:flex-col lg:gap-1 lg:landscape:h-20 lg:landscape:gap-1 xl:h-20 xl:gap-1 xl:rounded-3xl xl:landscape:h-20 xl:landscape:gap-1"
             :class="[
               a.key === 'Xtreme Finish' ? 'bg-red-600' : 'bg-slate-800',
               !isScorable ? 'grayscale opacity-30' : 'hover:brightness-110',
@@ -272,10 +278,10 @@ watch(
             :disabled="!isScorable"
             @click="score(activeP1.id, a.key)"
           >
-            <span class="text-sm font-black uppercase italic text-white/80">
+            <span class="score-action-label text-[11px] font-black uppercase italic text-white/80 landscape:text-[10px] sm:text-xs md:text-sm lg:text-base lg:landscape:text-base xl:text-base xl:landscape:text-base">
               {{ t(a.labelKey) }}
             </span>
-            <span class="text-base font-black sm:text-lg">
+            <span class="score-action-points text-xs font-black landscape:text-[11px] sm:text-sm md:text-lg lg:text-2xl lg:landscape:text-2xl xl:text-2xl xl:landscape:text-2xl">
               +{{ FINISH_POINTS[a.key] }}
             </span>
           </button>
@@ -290,10 +296,10 @@ watch(
             : 'bg-slate-900/40 ring-1 ring-white/10'
         "
       >
-        <div class="flex h-18 items-center justify-between border-b border-white/5 bg-blue-500/10 px-3 py-2.5 sm:px-4 sm:py-3.5">
+        <div class="flex min-h-14 items-center justify-between border-b border-white/5 bg-blue-500/10 px-3 py-1.5 sm:min-h-15 sm:py-2 md:min-h-16 md:px-4 md:py-2.5">
           <div class="flex min-w-0 flex-1 flex-col justify-center">
             <h2
-              class="truncate text-lg font-black uppercase italic"
+              class="truncate text-base font-black uppercase italic sm:text-lg md:text-xl"
               :class="
                 activeMatch.status === 'completed' && activeMatch.p2_score < activeMatch.p1_score
                   ? 'text-red-400'
@@ -303,7 +309,7 @@ watch(
               {{ activeP2.name }}
             </h2>
             <p
-              class="truncate text-sm font-bold italic"
+              class="truncate text-xs font-bold italic sm:text-sm"
               :class="
                 activeMatch.status === 'completed' && activeMatch.p2_score < activeMatch.p1_score
                   ? 'text-red-400/70'
@@ -328,12 +334,12 @@ watch(
           </span>
         </div>
 
-        <div class="my-1.5 grid grid-cols-2 gap-1.5 bg-black/20 p-1.5 landscape:mt-auto sm:mt-2 sm:gap-2 sm:p-2">
+        <div class="my-1 grid grid-cols-2 gap-1 bg-black/20 p-1 landscape:mt-auto sm:my-1.5 sm:gap-1.5 sm:p-1.5 md:mt-2 md:gap-2 md:p-2">
           <button
             v-for="a in actions"
             :key="a.key + '-p2'"
             type="button"
-            class="relative flex h-12 lg:flex-col gap-2 lg:gap-0 items-center justify-center overflow-hidden rounded-lg transition-all active:scale-95 sm:h-16 sm:rounded-2xl"
+            class="score-action-btn relative flex h-10 items-center justify-center gap-1 overflow-hidden rounded-lg transition-all active:scale-95 landscape:h-9 landscape:gap-0.5 sm:h-11 sm:gap-1.5 md:h-14 md:gap-2 md:rounded-2xl lg:h-20 lg:flex-col lg:gap-1 lg:landscape:h-20 lg:landscape:gap-1 xl:h-20 xl:gap-1 xl:rounded-3xl xl:landscape:h-20 xl:landscape:gap-1"
             :class="[
               a.key === 'Xtreme Finish' ? 'bg-blue-600' : 'bg-slate-800',
               !isScorable ? 'grayscale opacity-30' : 'hover:brightness-110',
@@ -341,10 +347,10 @@ watch(
             :disabled="!isScorable"
             @click="score(activeP2.id, a.key)"
           >
-            <span class="text-sm font-black uppercase italic text-white/80">
+            <span class="score-action-label text-[11px] font-black uppercase italic text-white/80 landscape:text-[10px] sm:text-xs md:text-sm lg:text-base lg:landscape:text-base xl:text-base xl:landscape:text-base">
               {{ t(a.labelKey) }}
             </span>
-            <span class="text-base font-black sm:text-lg">
+            <span class="score-action-points text-xs font-black landscape:text-[11px] sm:text-sm md:text-lg lg:text-2xl lg:landscape:text-2xl xl:text-2xl xl:landscape:text-2xl">
               +{{ FINISH_POINTS[a.key] }}
             </span>
           </button>
@@ -365,7 +371,7 @@ watch(
           >
             {{ t('match.finished') }}
           </h3>
-          <p class="mb-4 font-bold text-slate-400 md:mb-8 text-xl md:text-lg">
+          <p class="mb-4 text-lg font-bold text-slate-400 sm:mb-6 sm:text-xl">
             <i18n-t keypath="match.winnerIs" tag="span">
               <template #name>
                 <span :class="activeMatch.p1_score > activeMatch.p2_score ? 'text-red-400' : 'text-blue-400'">
@@ -409,6 +415,24 @@ watch(
 @media (max-height: 700px) {
   .text-5xl {
     font-size: 2.25rem;
+  }
+}
+
+@media (min-width: 640px) and (max-width: 1023px) and (orientation: landscape) {
+  .score-action-btn {
+    height: 2.5rem;
+    gap: 0.25rem;
+    border-radius: 0.625rem;
+  }
+
+  .score-action-label {
+    font-size: 0.7rem;
+    line-height: 1;
+  }
+
+  .score-action-points {
+    font-size: 0.8rem;
+    line-height: 1;
   }
 }
 </style>
