@@ -2,19 +2,22 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import type { BattleFormat, PlayerProfile, StadiumType, TournamentParticipant } from '@/types/bxtm'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useTournamentStore } from '@/stores/tournament'
 import { shortPlayerIdSuffix } from '@/utils/playerIdDisplay'
 
 const { t } = useI18n()
+const route = useRoute()
 const router = useRouter()
 const store = useTournamentStore()
 store.hydrate()
 
+const isNewSetup = computed(() => route.query.mode === 'new')
 const name = ref(store.tournamentName || '')
 const target = ref(store.targetPoints)
 const battleFormat = ref<BattleFormat>(store.battleFormat)
 const stadiumType = ref<StadiumType>(store.stadiumType)
+const draftPlayers = ref<TournamentParticipant[]>([])
 const playerName = ref('')
 const playerBey = ref('')
 const editingId = ref<string | null>(null)
@@ -26,9 +29,10 @@ const libraryComboPick = ref<Record<string, string>>({})
 const libraryCustomCombo = ref<Record<string, string>>({})
 const activeTab = ref<'rules' | 'players'>('rules')
 const playerNameInput = ref<HTMLInputElement | null>(null)
+const rosterPlayers = computed(() => (isNewSetup.value ? draftPlayers.value : store.players))
 
 const canSave = computed(
-  () => name.value.trim().length > 0 && store.players.length >= 2,
+  () => name.value.trim().length > 0 && rosterPlayers.value.length >= 2,
 )
 const canAddPlayer = computed(() => playerName.value.trim().length > 0)
 const libraryOptions = computed(() => store.playerLibrary)
@@ -47,6 +51,14 @@ const libraryDeployRows = computed(() => {
 const canDeployLibrary = computed(() => libraryDeployRows.value.length > 0)
 
 onMounted(() => {
+  if (isNewSetup.value) {
+    name.value = ''
+    target.value = 4
+    battleFormat.value = 'singles'
+    stadiumType.value = 'xtreme_standard'
+    draftPlayers.value = []
+    return
+  }
   name.value = store.tournamentName
   target.value = store.targetPoints
   battleFormat.value = store.battleFormat
@@ -76,7 +88,7 @@ function profileComboOptions(p: Pick<PlayerProfile, 'default_bey_name' | 'bey_co
 }
 
 function isInRoster(profileId: string) {
-  return store.players.some((p) => p.player_id === profileId)
+  return rosterPlayers.value.some((p) => p.player_id === profileId)
 }
 
 function ensureDefaultComboPick(profileId: string, p: PlayerProfile) {
@@ -124,6 +136,23 @@ function resetPlayerForm() {
 
 function submitPlayer() {
   if (!canAddPlayer.value) return
+  if (isNewSetup.value) {
+    const nameValue = playerName.value.trim()
+    if (!nameValue) return
+    const bey = playerBey.value.trim() || undefined
+    const today = new Date().toISOString().slice(0, 10)
+    const id = editingId.value ?? `tp-${crypto.randomUUID().slice(0, 8)}`
+    const existing = draftPlayers.value.find((p) => p.id === id)
+    const player_id = existing?.player_id ?? `pl-${crypto.randomUUID().slice(0, 8)}`
+    const next = [...draftPlayers.value]
+    const idx = next.findIndex((p) => p.id === id)
+    const row: TournamentParticipant = { id, player_id, name: nameValue, bey_name: bey, created_at: today }
+    if (idx >= 0) next[idx] = row
+    else next.push(row)
+    draftPlayers.value = next
+    resetPlayerForm()
+    return
+  }
   store.addOrUpdatePlayer({
     id: editingId.value ?? undefined,
     name: playerName.value,
@@ -142,12 +171,35 @@ function editPlayer(player: TournamentParticipant) {
 
 function removePlayer(id: string) {
   if (!confirm(t('setup.removeConfirm'))) return
+  if (isNewSetup.value) {
+    draftPlayers.value = draftPlayers.value.filter((p) => p.id !== id)
+    if (editingId.value === id) resetPlayerForm()
+    return
+  }
   store.removePlayer(id)
   if (editingId.value === id) resetPlayerForm()
 }
 
 function addSelectedFromLibrary() {
   if (!canDeployLibrary.value) return
+  if (isNewSetup.value) {
+    const today = new Date().toISOString().slice(0, 10)
+    const next = [...draftPlayers.value]
+    for (const row of libraryDeployRows.value) {
+      next.push({
+        id: `tp-${crypto.randomUUID().slice(0, 8)}`,
+        player_id: row.profile.id,
+        name: row.profile.name,
+        bey_name: row.bey_name,
+        created_at: row.profile.created_at ?? today,
+      })
+    }
+    draftPlayers.value = next
+    librarySelectedProfileIds.value = []
+    libraryComboPick.value = {}
+    libraryCustomCombo.value = {}
+    return
+  }
   store.addPlayersFromLibrary(libraryDeployRows.value)
   librarySelectedProfileIds.value = []
   libraryComboPick.value = {}
@@ -201,12 +253,15 @@ watch(activeTab, (tab) => {
 })
 
 function save() {
+  if (isNewSetup.value) {
+    store.newTournament()
+  }
   store.applySetup({
     tournamentName: name.value,
     targetPoints: target.value,
     battleFormat: battleFormat.value,
     stadiumType: stadiumType.value,
-    players: store.players,
+    players: rosterPlayers.value,
   })
   void router.push('/lobby')
 }
@@ -245,7 +300,7 @@ function save() {
         @click="activeTab = 'players'"
       >
         {{ t('setup.tabPlayers') }}
-        <span class="ml-1 opacity-50">({{ store.players.length }})</span>
+        <span class="ml-1 opacity-50">({{ rosterPlayers.length }})</span>
       </button>
     </div>
 
@@ -386,7 +441,7 @@ function save() {
         </h3>
 
         <div
-          v-if="store.players.length === 0"
+          v-if="rosterPlayers.length === 0"
           class="rounded-4xl border-2 border-dashed border-slate-800 py-12 text-center"
         >
           <p class="font-bold italic uppercase tracking-widest text-slate-600">{{ t('players.noPlayersReady') }}</p>
@@ -395,7 +450,7 @@ function save() {
 
         <transition-group name="list" tag="ul" class="grid gap-2">
           <li
-            v-for="p in store.players"
+            v-for="p in rosterPlayers"
             :key="p.id"
             class="group flex items-center justify-between rounded-2xl bg-slate-900/40 p-4 ring-1 ring-white/5 transition-all hover:bg-slate-900/80 hover:ring-bx-primary/30"
           >
@@ -594,7 +649,7 @@ function save() {
     <div
       class="fixed bottom-0 left-0 right-0 z-20 bg-linear-to-t from-slate-950 via-slate-950 to-transparent p-6 text-center sm:p-8"
     >
-      <p v-if="name.trim().length > 0 && store.players.length < 2" class="mb-3 text-xs font-bold text-bx-primary">
+      <p v-if="name.trim().length > 0 && rosterPlayers.length < 2" class="mb-3 text-xs font-bold text-bx-primary">
         {{ t('setup.needTwoPlayers') }}
       </p>
       <button

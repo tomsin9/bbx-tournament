@@ -37,7 +37,8 @@
     "deleteTournament": "Delete",
     "deleteTournamentConfirm": "Delete this tournament? This action cannot be undone.",
     "goLobby": "Go to lobby",
-    "goSetup": "Continue setup"
+    "goSetup": "Continue tournament setup",
+    "quickMatch": "Quick Match"
   },
   "setup": {
     "title": "Tournament setup",
@@ -108,11 +109,14 @@
   },
   "match": {
     "back": "Back to lobby",
+    "target": "Target",
     "undo": "Undo last",
     "targetHint": "{n} points to win",
     "finished": "Match finished",
     "battleResult": "Battle Result",
     "winnerIs": "Winner: {name}",
+    "startAgain": "Start Again",
+    "saveToHistory": "Save to history",
     "returnToLobby": "Return to lobby",
     "noBey": "No Bey specified",
     "of": "Over Finish",
@@ -128,6 +132,7 @@
     "export": "Export JSON",
     "filterLabel": "Tournament",
     "allTournaments": "All tournaments",
+    "quickMatch": "Quick Match",
     "tournament": "Tournament",
     "vs": "vs",
     "score": "Score",
@@ -167,6 +172,7 @@
     "active": "Active",
     "inRoster": "In roster",
     "players": "players",
+    "matches": "matches",
     "ptsToWin": "pts to win",
     "replaceDataTitle": "Replace local data?",
     "replaceDataBody": "Importing will replace all data stored in this browser for this app.",

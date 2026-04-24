@@ -11,6 +11,7 @@ It supports the full event flow from participant setup to match progression, his
 
 - **Tournament setup**: Configure event parameters and initialize tournament sessions.
 - **Player management**: Add, edit, and organize participants before and during an event.
+- **Quick match**: Start instant matches with minimal setup for faster casual battles.
 - **Match flow control**: Manage match progression and lobby states in a structured workflow.
 - **Match history**: Review completed matches and event records.
 - **Localization**: Built-in internationalization support for English and Chinese (`en` / `zh`).

@@ -2,9 +2,10 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import type { FinishAction } from '@/types/bxtm'
+import type { FinishAction, Match } from '@/types/bxtm'
 import { FINISH_POINTS } from '@/types/bxtm'
 import { useTournamentStore } from '@/stores/tournament'
+import { applyScore as applyScorePure, undoLast as undoLastPure } from '@/utils/matchLogic'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -14,13 +15,27 @@ store.hydrate()
 
 const matchId = computed(() => route.params.id as string)
 const match = computed(() => store.getMatch(matchId.value))
+const isQuickMatch = computed(() => matchId.value === 'quick' || route.query.quick === '1')
+const quickTargetPoints = ref(4)
+const includeQuickInHistory = ref(false)
+const lastSavedQuickMatchKey = ref<string | null>(null)
+const QUICK_P1_ID = 'P1'
+const QUICK_P2_ID = 'P2'
+const quickMatch = ref<Match | null>(null)
 
 const p1 = computed(() => (match.value ? store.playerById(match.value.p1_participant_id) : undefined))
 const p2 = computed(() => (match.value ? store.playerById(match.value.p2_participant_id) : undefined))
+const activeMatch = computed(() => (isQuickMatch.value ? quickMatch.value : match.value))
+const activeP1 = computed(() =>
+  isQuickMatch.value ? { id: QUICK_P1_ID, name: 'P1', bey_name: '' } : p1.value,
+)
+const activeP2 = computed(() =>
+  isQuickMatch.value ? { id: QUICK_P2_ID, name: 'P2', bey_name: '' } : p2.value,
+)
 
 const prevStatus = ref<string | null>(null)
 const isScorable = computed(
-  () => match.value?.status === 'pending' || match.value?.status === 'in_progress',
+  () => activeMatch.value?.status === 'pending' || activeMatch.value?.status === 'in_progress',
 )
 
 const actions: { key: FinishAction; labelKey: string }[] = [
@@ -40,22 +55,51 @@ function triggerHaptic(action: FinishAction) {
 }
 
 function score(winnerId: string, action: FinishAction) {
-  if (!match.value || !isScorable.value) return
+  if (!activeMatch.value || !isScorable.value) return
   triggerHaptic(action)
-  store.applyScore(match.value.match_id, winnerId, action)
+  if (isQuickMatch.value && quickMatch.value) {
+    quickMatch.value = applyScorePure(quickMatch.value, winnerId, action)
+    return
+  }
+  store.applyScore(activeMatch.value.match_id, winnerId, action)
 }
 
 function undo() {
-  if (!match.value) return
-  store.undo(match.value.match_id)
+  if (!activeMatch.value) return
+  if (isQuickMatch.value && quickMatch.value) {
+    quickMatch.value = undoLastPure(quickMatch.value)
+    return
+  }
+  store.undo(activeMatch.value.match_id)
 }
 
 function back() {
-  void router.push('/lobby')
+  void router.push(isQuickMatch.value ? '/' : '/lobby')
+}
+
+function startAgain() {
+  if (!activeMatch.value) return
+  if (isQuickMatch.value && quickMatch.value) {
+    lastSavedQuickMatchKey.value = null
+    quickMatch.value = {
+      ...quickMatch.value,
+      p1_score: 0,
+      p2_score: 0,
+      logs: [],
+      status: 'pending',
+      winner_participant_id: undefined,
+      endedAt: undefined,
+      startedAt: undefined,
+      timestamp: new Date().toISOString(),
+    }
+    return
+  }
+  const newId = store.startMatch(activeMatch.value.p1_participant_id, activeMatch.value.p2_participant_id)
+  void router.push(`/match/${newId}`)
 }
 
 watch(
-  () => match.value?.status,
+  () => activeMatch.value?.status,
   (st) => {
     const wasLive = prevStatus.value === 'pending' || prevStatus.value === 'in_progress'
     prevStatus.value = st ?? null
@@ -63,10 +107,76 @@ watch(
   },
   { immediate: true },
 )
+
+watch(
+  [isQuickMatch, quickTargetPoints],
+  ([quick]) => {
+    if (!quick) return
+    const safeTarget = Math.max(1, Math.floor(quickTargetPoints.value || 1))
+    quickTargetPoints.value = safeTarget
+
+    if (!quickMatch.value) {
+      quickMatch.value = {
+        match_id: 'quick-match',
+        p1_participant_id: QUICK_P1_ID,
+        p2_participant_id: QUICK_P2_ID,
+        p1_score: 0,
+        p2_score: 0,
+        logs: [],
+        status: 'pending',
+        timestamp: new Date().toISOString(),
+        target_points: safeTarget,
+      }
+      return
+    }
+
+    quickMatch.value = {
+      ...quickMatch.value,
+      target_points: safeTarget,
+      status:
+        quickMatch.value.p1_score >= safeTarget || quickMatch.value.p2_score >= safeTarget
+          ? 'completed'
+          : quickMatch.value.logs.length
+            ? 'in_progress'
+            : 'pending',
+      winner_participant_id:
+        quickMatch.value.p1_score >= safeTarget
+          ? QUICK_P1_ID
+          : quickMatch.value.p2_score >= safeTarget
+            ? QUICK_P2_ID
+            : undefined,
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  () => activeMatch.value,
+  (m) => {
+    if (!isQuickMatch.value || !m || m.status !== 'completed' || !includeQuickInHistory.value) return
+    const saveKey = `${m.timestamp}-${m.logs.length}-${m.p1_score}-${m.p2_score}`
+    if (lastSavedQuickMatchKey.value === saveKey) return
+    const endedAt = m.endedAt ?? new Date().toISOString()
+    const archived: Match = {
+      ...m,
+      match_id: `qm-${crypto.randomUUID().slice(0, 8)}`,
+      status: 'completed',
+      timestamp: endedAt,
+      endedAt,
+      tournament_name: 'Quick Match',
+    }
+    store.replaceState({
+      ...store.state,
+      matches: [...store.state.matches, archived],
+    })
+    lastSavedQuickMatchKey.value = saveKey
+  },
+  { deep: true },
+)
 </script>
 
 <template>
-  <div v-if="match && p1 && p2" class="h-screen flex flex-col overflow-hidden bg-slate-950 p-3 text-white sm:p-4">
+  <div v-if="activeMatch && activeP1 && activeP2" class="h-screen flex flex-col overflow-hidden bg-slate-950 p-3 text-white sm:p-4">
     <header class="mb-2 flex shrink-0 items-center justify-between sm:mb-3">
       <button
         type="button"
@@ -82,13 +192,36 @@ watch(
       <div class="flex items-center gap-3">
         <div class="rounded-full border border-white/10 bg-white/5 px-3 py-1">
           <span class="text-xs font-black uppercase tracking-tighter text-slate-300">
-            {{ t('match.targetHint', { n: match.target_points }) }}
+            {{ t('match.targetHint', { n: activeMatch.target_points }) }}
           </span>
         </div>
+        <label
+          v-if="isQuickMatch"
+          class="flex items-center gap-2 rounded-full border border-bx-primary/50 bg-bx-primary/10 px-3 py-1 text-xs font-black uppercase tracking-wider text-bx-primary"
+        >
+          {{ t('match.target') }}
+          <input
+            v-model.number="quickTargetPoints"
+            type="number"
+            min="1"
+            class="w-14 rounded-md border border-bx-primary/40 bg-slate-950 px-2 py-0.5 text-right text-white outline-none"
+          >
+        </label>
+        <label
+          v-if="isQuickMatch"
+          class="flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-3 py-1 text-xs font-black uppercase tracking-wider text-slate-200"
+        >
+          <input
+            v-model="includeQuickInHistory"
+            type="checkbox"
+            class="h-3.5 w-3.5 accent-bx-primary"
+          >
+          {{ t('match.saveToHistory') }}
+        </label>
         <button
           type="button"
           class="rounded-xl border border-slate-800 bg-slate-900 p-1.5 text-slate-300 transition-all opacity-100 active:scale-90 disabled:opacity-20 sm:p-2"
-          :disabled="match.logs.length === 0"
+          :disabled="activeMatch.logs.length === 0"
           @click="undo"
         >
           <svg class="h-4 w-4 text-bx-primary sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -102,7 +235,7 @@ watch(
       <section
         class="relative flex h-full min-h-0 flex-col overflow-hidden rounded-3xl transition-all duration-300 sm:rounded-[2.5rem] border border-white/10 bg-slate-900/40"
         :class="
-          match.p1_score >= match.target_points
+          activeMatch.p1_score >= activeMatch.target_points
             ? 'ring-4 ring-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)]'
             : 'bg-slate-900/40 ring-1 ring-white/10'
         "
@@ -110,10 +243,10 @@ watch(
         <div class="flex h-18 items-center justify-between border-b border-white/5 bg-red-500/10 px-3 py-2.5 sm:px-4 sm:py-3.5">
           <div class="flex min-w-0 flex-1 flex-col justify-center">
             <h2 class="truncate text-lg font-black uppercase italic sm:text-base">
-              {{ p1.name }}
+              {{ activeP1.name }}
             </h2>
             <p class="truncate text-sm font-bold italic text-red-400/70">
-              {{ p1.bey_name || t('match.noBey') }}
+              {{ activeP1.bey_name || t('match.noBey') }}
             </p>
           </div>
         </div>
@@ -122,7 +255,7 @@ watch(
           <span
             class="text-7xl text-red-400 font-black italic tracking-tighter tabular-nums landscape:text-4xl lg:text-8xl lg:landscape:text-8xl"
           >
-            {{ match.p1_score }}
+            {{ activeMatch.p1_score }}
           </span>
         </div>
 
@@ -137,7 +270,7 @@ watch(
               !isScorable ? 'grayscale opacity-30' : 'hover:brightness-110',
             ]"
             :disabled="!isScorable"
-            @click="score(p1.id, a.key)"
+            @click="score(activeP1.id, a.key)"
           >
             <span class="text-sm font-black uppercase italic text-white/80">
               {{ t(a.labelKey) }}
@@ -152,7 +285,7 @@ watch(
       <section
         class="relative flex h-full min-h-0 flex-col overflow-hidden rounded-3xl transition-all duration-300 sm:rounded-[2.5rem] border border-white/10 bg-slate-900/40"
         :class="
-          match.p2_score >= match.target_points
+          activeMatch.p2_score >= activeMatch.target_points
             ? 'ring-4 ring-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.3)]'
             : 'bg-slate-900/40 ring-1 ring-white/10'
         "
@@ -162,22 +295,22 @@ watch(
             <h2
               class="truncate text-lg font-black uppercase italic"
               :class="
-                match.status === 'completed' && match.p2_score < match.p1_score
+                activeMatch.status === 'completed' && activeMatch.p2_score < activeMatch.p1_score
                   ? 'text-red-400'
                   : 'text-white'
               "
             >
-              {{ p2.name }}
+              {{ activeP2.name }}
             </h2>
             <p
               class="truncate text-sm font-bold italic"
               :class="
-                match.status === 'completed' && match.p2_score < match.p1_score
+                activeMatch.status === 'completed' && activeMatch.p2_score < activeMatch.p1_score
                   ? 'text-red-400/70'
                   : 'text-blue-400/70'
               "
             >
-              {{ p2.bey_name || t('match.noBey') }}
+              {{ activeP2.bey_name || t('match.noBey') }}
             </p>
           </div>
         </div>
@@ -186,12 +319,12 @@ watch(
           <span
             class="text-7xl font-black italic tracking-tighter tabular-nums landscape:text-4xl lg:text-8xl lg:landscape:text-8xl"
             :class="
-              match.status === 'completed' && match.p2_score < match.p1_score
+              activeMatch.status === 'completed' && activeMatch.p2_score < activeMatch.p1_score
                 ? 'text-red-400'
                 : 'text-blue-400'
             "
           >
-            {{ match.p2_score }}
+            {{ activeMatch.p2_score }}
           </span>
         </div>
 
@@ -206,7 +339,7 @@ watch(
               !isScorable ? 'grayscale opacity-30' : 'hover:brightness-110',
             ]"
             :disabled="!isScorable"
-            @click="score(p2.id, a.key)"
+            @click="score(activeP2.id, a.key)"
           >
             <span class="text-sm font-black uppercase italic text-white/80">
               {{ t(a.labelKey) }}
@@ -221,26 +354,33 @@ watch(
 
     <transition name="winner">
       <div
-        v-if="match.status === 'completed'"
+        v-if="activeMatch.status === 'completed'"
         class="fixed inset-0 z-100 flex items-center justify-center p-4"
       >
         <div class="absolute inset-0 bg-slate-950/90 backdrop-blur-md"></div>
         <div class="relative w-full max-w-sm rounded-4xl border border-white/10 bg-slate-900 p-4 text-center shadow-2xl sm:p-8">
           <h3
             class="mb-4 text-3xl font-black uppercase italic leading-none tracking-tighter md:text-5xl"
-            :class="match.p1_score > match.p2_score ? 'text-red-400' : 'text-blue-400'"
+            :class="activeMatch.p1_score > activeMatch.p2_score ? 'text-red-400' : 'text-blue-400'"
           >
             {{ t('match.finished') }}
           </h3>
           <p class="mb-4 font-bold text-slate-400 md:mb-8 text-xl md:text-lg">
             <i18n-t keypath="match.winnerIs" tag="span">
               <template #name>
-                <span :class="match.p1_score > match.p2_score ? 'text-red-400' : 'text-blue-400'">
-                  {{ match.p1_score > match.p2_score ? p1.name : p2.name }}
+                <span :class="activeMatch.p1_score > activeMatch.p2_score ? 'text-red-400' : 'text-blue-400'">
+                  {{ activeMatch.p1_score > activeMatch.p2_score ? activeP1.name : activeP2.name }}
                 </span>
               </template>
             </i18n-t>
           </p>
+          <button
+            type="button"
+            class="mb-3 w-full rounded-xl border border-white/20 py-3 text-sm font-black uppercase italic tracking-widest text-white active:scale-95 md:rounded-2xl md:py-4 md:text-base"
+            @click="startAgain"
+          >
+            {{ t('match.startAgain') }}
+          </button>
           <button
             type="button"
             class="w-full rounded-xl bg-white py-3 text-sm font-black uppercase italic tracking-widest text-black active:scale-95 md:rounded-2xl md:py-4 md:text-base"

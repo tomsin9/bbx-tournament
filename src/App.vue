@@ -169,22 +169,6 @@ async function onFile(e: Event) {
             {{ t('nav.history') }}
           </RouterLink>
 
-          <button
-            type="button"
-            class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
-            :aria-label="t('app.infoLabel')"
-            @click="openInfoModal"
-          >
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          </button>
-
           <div class="relative">
             <select
               class="appearance-none rounded-lg border border-slate-700 bg-slate-900 py-1.5 pl-3 pr-8 text-xs font-medium text-slate-300 focus:outline-none focus:ring-2 focus:ring-bx-primary"
@@ -204,6 +188,23 @@ async function onFile(e: Event) {
               </svg>
             </div>
           </div>
+
+          <button
+            type="button"
+            class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+            :aria-label="t('app.infoLabel')"
+            @click="openInfoModal"
+          >
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </button>
+
         </nav>
       </div>
     </header>

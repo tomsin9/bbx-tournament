@@ -10,12 +10,18 @@ const selectedTournamentId = ref('all')
 
 const tournamentFilterOptions = computed(() => [
   { id: 'all', name: t('history.allTournaments') },
+  { id: 'quick', name: t('history.quickMatch') },
   ...store.tournamentList.map((tt) => ({ id: tt.id, name: tt.name })),
 ])
 
 const sortedFinishedMatches = computed(() =>
   store.allFinishedMatches
-    .filter((m) => selectedTournamentId.value === 'all' || m.tournament_id === selectedTournamentId.value)
+    .filter((m) => {
+      const isQuick = (m.tournament_name ?? '').trim() === 'Quick Match'
+      if (selectedTournamentId.value === 'all') return true
+      if (selectedTournamentId.value === 'quick') return isQuick
+      return m.tournament_id === selectedTournamentId.value && !isQuick
+    })
     .sort((a, b) => {
     const ta = Date.parse(a.endedAt ?? a.timestamp)
     const tb = Date.parse(b.endedAt ?? b.timestamp)

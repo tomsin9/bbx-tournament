@@ -16,10 +16,13 @@ const router = createRouter({
 router.beforeEach((to) => {
   const store = useTournamentStore()
   if (!store.hydrated) store.hydrate()
-  if ((to.name === 'lobby' || to.name === 'match') && !store.hasPlayers) {
+  const isQuickMatchRoute =
+    to.name === 'match' &&
+    (to.params.id === 'quick' || to.query.quick === '1')
+  if ((to.name === 'lobby' || (to.name === 'match' && !isQuickMatchRoute)) && !store.hasPlayers) {
     return { name: 'setup' }
   }
-  if (to.name === 'match' && typeof to.params.id === 'string') {
+  if (to.name === 'match' && typeof to.params.id === 'string' && !isQuickMatchRoute) {
     const m = store.getMatch(to.params.id)
     if (!m) return { name: 'lobby' }
   }

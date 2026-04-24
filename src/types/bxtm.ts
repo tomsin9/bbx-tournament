@@ -85,7 +85,7 @@ export const FINISH_POINTS: Record<FinishAction, number> = {
   'Spin Finish': 1,
 }
 
-export const APP_VERSION = '1.0'
+export const APP_VERSION = '1.1'
 
 export function emptyState(): BxTmState {
   return {

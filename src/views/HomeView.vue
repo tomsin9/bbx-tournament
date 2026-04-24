@@ -17,8 +17,7 @@ const hasCurrentTournament = computed(
 const currentLiveMatchId = computed(() => store.liveMatches[0]?.match_id ?? null)
 
 function onNewTournament() {
-  store.newTournament()
-  void router.push('/setup')
+  void router.push('/setup?mode=new')
 }
 
 function triggerImport() {
@@ -76,6 +75,10 @@ function continueCurrentTournament() {
 
 function goSetup() {
   void router.push('/setup')
+}
+
+function goQuickMatch() {
+  void router.push('/match/quick')
 }
 
 function openTournament(id: string) {
@@ -160,10 +163,17 @@ function removeTournament(id: string) {
       </div>
     </section>
 
-    <section v-if="hasCurrentTournament" class="grid gap-3 sm:grid-cols-2">
+    <section v-if="hasCurrentTournament" class="grid gap-3 sm:grid-cols-3">
       <button
         type="button"
         class="rounded-2xl border border-bx-primary/40 bg-bx-primary/10 px-5 py-3 text-sm font-semibold text-bx-primary transition hover:bg-bx-primary/20"
+        @click="goQuickMatch"
+      >
+        {{ t('home.quickMatch') }}
+      </button>
+      <button
+        type="button"
+        class="rounded-2xl border border-blue-500/40 bg-blue-500/10 px-5 py-3 text-sm font-semibold text-blue-300 transition hover:bg-blue-500/20"
         @click="onNewTournament"
       >
         {{ t('home.createNewTournament') }}
@@ -199,7 +209,9 @@ function removeTournament(id: string) {
                 ● {{ t('common.active') }}
               </span>
             </p>
-            <p class="text-xs text-slate-500">{{ item.players }} P · {{ item.matches }} M</p>
+            <p class="text-xs text-slate-500">
+              {{ item.players }} {{ t('common.players') }} · {{ item.matches }} {{ t('common.matches') }}
+            </p>
           </div>
           <div class="flex items-center gap-2">
             <button
