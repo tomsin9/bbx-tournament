@@ -87,6 +87,8 @@ function coerceMatch(v: unknown, defaultTargetPoints: number): Match | null {
   if (typeof o.timestamp !== 'string') return null
   if (o.startedAt !== undefined && typeof o.startedAt !== 'string') return null
   if (o.endedAt !== undefined && typeof o.endedAt !== 'string') return null
+  if (o.p1_bey_name !== undefined && typeof o.p1_bey_name !== 'string') return null
+  if (o.p2_bey_name !== undefined && typeof o.p2_bey_name !== 'string') return null
   const tp =
     typeof o.target_points === 'number' && o.target_points >= 1
       ? o.target_points
@@ -118,6 +120,8 @@ function coerceMatch(v: unknown, defaultTargetPoints: number): Match | null {
     endedAt: o.endedAt as string | undefined,
     target_points: tp,
     tournament_name: o.tournament_name as string | undefined,
+    p1_bey_name: typeof o.p1_bey_name === 'string' ? o.p1_bey_name : undefined,
+    p2_bey_name: typeof o.p2_bey_name === 'string' ? o.p2_bey_name : undefined,
     winner_participant_id:
       typeof o.winner_participant_id === 'string'
         ? o.winner_participant_id

@@ -117,6 +117,8 @@
     "winnerIs": "Winner: {name}",
     "startAgain": "Start Again",
     "saveToHistory": "Save to history",
+    "historyTitle": "Match History",
+    "viewMore": "View more",
     "returnToLobby": "Return to lobby",
     "noBey": "No Bey specified",
     "of": "Over Finish",
@@ -138,6 +140,7 @@
     "score": "Score",
     "winner": "Winner: {name}",
     "matchDetails": "Match Details",
+    "viewMore": "View more",
     "actions": {
       "sf": "Spin Finish",
       "of": "Over Finish",

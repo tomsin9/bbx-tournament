@@ -220,7 +220,7 @@ function removeTournament(id: string) {
         <li
           v-for="item in store.tournamentList"
           :key="item.id"
-          class="group flex items-center justify-between rounded-2xl border border-slate-800 bg-slate-900/30 p-4 transition hover:bg-slate-900/80"
+          class="group flex items-center justify-between rounded-2xl border border-slate-700 bg-slate-900/35 p-4 ring-1 ring-white/5 transition hover:border-bx-primary/30 hover:shadow-[0_10px_24px_rgba(0,0,0,0.2)]"
         >
           <div class="min-w-0 space-y-1">
             <p class="truncate font-bold text-slate-200 transition-colors group-hover:text-white">
@@ -273,7 +273,7 @@ function removeTournament(id: string) {
       </ul>
     </section>
 
-    <section class="rounded-2xl border border-slate-800 bg-slate-900/30 px-4 py-3">
+    <section class="rounded-2xl border border-slate-700 bg-slate-900/35 px-4 py-3 ring-1 ring-white/5">
       <div class="flex items-center justify-between gap-3">
         <p class="text-xs font-medium uppercase tracking-wider text-slate-500">{{ t('home.dataTools') }}</p>
         <div class="flex items-center gap-2">

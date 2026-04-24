@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useTournamentStore } from '@/stores/tournament'
 
@@ -7,6 +7,7 @@ const { t, locale } = useI18n()
 const store = useTournamentStore()
 store.hydrate()
 const selectedTournamentId = ref('all')
+const visibleMatchCount = ref(10)
 
 const tournamentFilterOptions = computed(() => [
   { id: 'all', name: t('history.allTournaments') },
@@ -32,6 +33,22 @@ const sortedFinishedMatches = computed(() =>
     }),
 )
 
+const displayedFinishedMatches = computed(() =>
+  sortedFinishedMatches.value.slice(0, visibleMatchCount.value),
+)
+
+const hasMoreMatches = computed(
+  () => sortedFinishedMatches.value.length > visibleMatchCount.value,
+)
+
+function loadMoreMatches() {
+  visibleMatchCount.value += 10
+}
+
+watch(selectedTournamentId, () => {
+  visibleMatchCount.value = 10
+})
+
 function winnerName(match: {
   p1_name: string
   p2_name: string
@@ -46,12 +63,12 @@ function winnerName(match: {
 
 function winnerBadgeClass(match: { p1_score: number; p2_score: number }) {
   if (match.p1_score > match.p2_score) {
-    return 'bg-red-400/10 text-red-300 ring-red-300/25'
+    return 'bg-slate-900/80 text-red-300 ring-slate-700/80'
   }
   if (match.p2_score > match.p1_score) {
-    return 'bg-blue-400/10 text-blue-500 ring-blue-300/25'
+    return 'bg-slate-900/80 text-blue-400 ring-slate-700/80'
   }
-  return 'bg-bx-primary/10 text-bx-primary ring-bx-primary/20'
+  return 'bg-slate-900/80 text-bx-primary ring-slate-700/80'
 }
 
 function formatTimestamp(ts: string) {
@@ -164,19 +181,19 @@ function downloadExport() {
 
       <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-end">
         <div class="flex min-w-56 flex-col gap-1">
-          <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">
+          <label class="text-[11px] font-black uppercase tracking-[0.2em] text-slate-500">
             {{ t('history.filterLabel') }}
           </label>
           <select
             v-model="selectedTournamentId"
-            class="min-h-11 rounded-2xl border border-slate-700 bg-bx-surface px-3 py-2 text-sm font-bold text-slate-200 focus:border-bx-primary focus:outline-none"
+            class="min-h-11 rounded-2xl border border-slate-800 bg-slate-900/60 px-3 py-2 text-sm font-bold text-slate-200 focus:border-bx-primary focus:outline-none"
           >
             <option v-for="opt in tournamentFilterOptions" :key="opt.id" :value="opt.id">{{ opt.name }}</option>
           </select>
         </div>
         <button
           type="button"
-          class="group inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-bx-surface px-4 py-3 text-sm font-bold text-slate-200 transition-all hover:border-bx-accent/40 hover:text-white sm:self-end"
+          class="group inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-sm font-bold text-slate-200 transition-all hover:border-bx-primary/40 hover:text-white sm:self-end"
           @click="downloadExport"
         >
           <svg class="h-5 w-5 text-bx-accent transition-colors group-hover:text-bx-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -199,48 +216,23 @@ function downloadExport() {
 
     <div v-else class="space-y-4">
       <article
-        v-for="m in sortedFinishedMatches"
+        v-for="m in displayedFinishedMatches"
         :key="m.match_id"
-        class="group relative overflow-hidden rounded-4xl border border-slate-800 bg-slate-950/90 p-6 transition-all hover:border-bx-accent/30"
+        class="group relative overflow-hidden rounded-4xl border-2 border-slate-700/90 bg-slate-900/45 p-5 ring-1 ring-white/8 transition-all duration-200 hover:-translate-y-0.5 hover:border-bx-primary/45 hover:shadow-[0_14px_35px_rgba(0,0,0,0.28)] sm:p-6"
       >
         <div class="pointer-events-none absolute -right-4 -top-4 select-none text-8xl font-black italic tracking-tighter text-white/3">VS</div>
 
-        <div class="relative flex flex-col justify-between gap-6 md:flex-row md:items-center">
-          <div class="flex items-center gap-6">
-            <div class="min-w-[96px] text-center">
-              <p class="truncate text-sm font-bold" :class="m.p1_score > m.p2_score ? 'text-white' : 'text-slate-500'">
-                {{ m.p1_score > m.p2_score ? '🏆 ' : '' }}{{ m.p1_name }}
-              </p>
-              <p
-                class="text-3xl font-black italic tracking-tight"
-                :class="m.p1_score > m.p2_score ? 'text-red-500' : 'text-red-400/50'"
-              >
-                {{ m.p1_score }}
-              </p>
-            </div>
-
-            <div class="text-xs font-black italic tracking-tight text-slate-700">{{ t('history.vs') }}</div>
-
-            <div class="min-w-[96px] text-center">
-              <p class="truncate text-sm font-bold" :class="m.p2_score > m.p1_score ? 'text-white' : 'text-slate-500'">
-                {{ m.p2_score > m.p1_score ? '🏆 ' : '' }}{{ m.p2_name }}
-              </p>
-              <p
-                class="text-3xl font-black italic tracking-tight"
-                :class="m.p2_score > m.p1_score ? 'text-blue-500' : 'text-blue-400/50'"
-              >
-                {{ m.p2_score }}
-              </p>
-            </div>
-          </div>
-
-          <div class="flex flex-col gap-1 md:items-end">
-            <p class="text-[10px] font-bold uppercase tracking-widest text-slate-500">
-              {{ t('history.tournament') }}: {{ m.tournament_name || '-' }}
+        <div class="relative mb-4 flex flex-wrap items-center justify-between gap-2">
+          <p class="text-[11px] font-bold uppercase tracking-widest text-slate-500">
+            {{ t('history.tournament') }}: {{ m.tournament_name || '-' }}
+          </p>
+          <div class="flex items-center gap-2">
+            <p class="rounded-full border border-slate-700/80 bg-slate-900/80 px-2.5 py-1 text-[11px] font-medium text-slate-400">
+              {{ formatTimestamp(m.timestamp) }}
             </p>
             <div
               v-if="winnerName(m)"
-              class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ring-1"
+              class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-widest ring-1"
               :class="winnerBadgeClass(m)"
             >
               <svg class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
@@ -248,20 +240,58 @@ function downloadExport() {
               </svg>
               {{ t('history.winner', { name: winnerName(m) }) }}
             </div>
-            <p class="text-[10px] font-medium text-slate-500">{{ formatTimestamp(m.timestamp) }}</p>
           </div>
         </div>
 
-        <details class="mt-6 group/logs">
-          <summary class="flex cursor-pointer list-none items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 transition-colors hover:text-slate-300">
+        <div class="relative flex flex-col justify-between gap-5 md:flex-row md:items-center">
+          <div class="grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-6">
+            <div class="rounded-2xl border border-slate-700/80 bg-slate-900/70 px-3 py-3 text-center sm:px-4">
+              <p class="truncate text-sm font-bold" :class="m.p1_score > m.p2_score ? 'text-white' : 'text-slate-500'">
+                {{ m.p1_score > m.p2_score ? '🏆 ' : '' }}{{ m.p1_name }}
+              </p>
+              <p v-if="m.p1_bey_name" class="mx-auto mt-1 w-fit max-w-full truncate rounded-full border border-slate-700/70 bg-slate-900/70 px-2 py-0.5 text-[11px] font-medium text-slate-400">
+                {{ m.p1_bey_name }}
+              </p>
+              <p
+                class="mt-2 text-4xl font-black italic tracking-tight"
+                :class="m.p1_score > m.p2_score ? 'text-red-500' : 'text-red-400/50'"
+              >
+                {{ m.p1_score }}
+              </p>
+            </div>
+
+            <div class="text-center text-xs font-black italic tracking-tight text-slate-600">{{ t('history.vs') }}</div>
+
+            <div class="rounded-2xl border border-slate-700/80 bg-slate-900/70 px-3 py-3 text-center sm:px-4">
+              <p class="truncate text-sm font-bold" :class="m.p2_score > m.p1_score ? 'text-white' : 'text-slate-500'">
+                {{ m.p2_score > m.p1_score ? '🏆 ' : '' }}{{ m.p2_name }}
+              </p>
+              <p v-if="m.p2_bey_name" class="mx-auto mt-1 w-fit max-w-full truncate rounded-full border border-slate-700/70 bg-slate-900/70 px-2 py-0.5 text-[11px] font-medium text-slate-400">
+                {{ m.p2_bey_name }}
+              </p>
+              <p
+                class="mt-2 text-4xl font-black italic tracking-tight"
+                :class="m.p2_score > m.p1_score ? 'text-blue-500' : 'text-blue-400/50'"
+              >
+                {{ m.p2_score }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <details class="mt-5 border-t border-slate-800/80 pt-4 group/logs">
+          <summary class="flex cursor-pointer list-none items-center gap-2 text-[11px] font-black uppercase tracking-[0.2em] text-slate-500 transition-colors hover:text-slate-300">
             <svg class="h-3 w-3 transition-transform group-open/logs:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" />
             </svg>
             {{ t('history.matchDetails') }}
+            <span class="rounded-full border border-slate-700/80 px-2 py-0.5 text-[9px] tracking-normal text-slate-400">
+              {{ m.logs.length }}
+            </span>
           </summary>
 
-          <div class="ml-1.5 mt-4 space-y-2 border-l-2 border-slate-800 py-1 pl-4">
-            <div v-for="(log, i) in m.logs" :key="i" class="flex items-center gap-3 text-sm">
+          <div class="ml-1 mt-4 space-y-2.5 border-l-2 border-slate-800/90 py-1 pl-4">
+            <div v-for="(log, i) in m.logs" :key="i" class="flex items-center gap-2.5 rounded-xl border border-slate-800/80 bg-slate-900/40 px-2.5 py-2 text-sm">
               <span
                 class="min-w-[72px] truncate font-bold"
                 :class="logAccentClass(log.winner_participant_id, m)"
@@ -275,11 +305,12 @@ function downloadExport() {
                 }}
               </span>
               <span
-                class="rounded-full px-2 py-1 text-[10px] font-black tracking-wide ring-1"
+                class="rounded-full px-2 py-1 text-[11px] font-black tracking-wide ring-1"
                 :class="actionBadgeClass(log.action)"
               >
                 {{ actionBadgeLabel(log.action) }}
               </span>
+              <span class="text-[11px] font-medium text-slate-500">#{{ i + 1 }}</span>
               <span
                 class="ml-auto font-mono font-bold"
                 :class="actionPointsClass(log.action)"
@@ -290,6 +321,14 @@ function downloadExport() {
           </div>
         </details>
       </article>
+      <button
+        v-if="hasMoreMatches"
+        type="button"
+        class="w-full rounded-2xl border border-slate-700 bg-slate-900/70 px-4 py-2.5 text-sm font-bold text-slate-300 transition hover:border-bx-accent/40 hover:text-white"
+        @click="loadMoreMatches"
+      >
+        {{ t('history.viewMore') }}
+      </button>
     </div>
   </div>
 </template>

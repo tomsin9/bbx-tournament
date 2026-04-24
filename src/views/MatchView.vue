@@ -19,6 +19,7 @@ const isQuickMatch = computed(() => matchId.value === 'quick' || route.query.qui
 const quickTargetPoints = ref(4)
 const includeQuickInHistory = ref(false)
 const lastSavedQuickMatchKey = ref<string | null>(null)
+const visibleHistoryCount = ref(10)
 const QUICK_P1_ID = 'P1'
 const QUICK_P2_ID = 'P2'
 const quickMatch = ref<Match | null>(null)
@@ -37,6 +38,14 @@ const prevStatus = ref<string | null>(null)
 const isScorable = computed(
   () => activeMatch.value?.status === 'pending' || activeMatch.value?.status === 'in_progress',
 )
+const displayedLogs = computed(() => {
+  const logs = activeMatch.value?.logs ?? []
+  return logs.slice(-visibleHistoryCount.value).reverse()
+})
+const hasMoreLogs = computed(() => {
+  const logs = activeMatch.value?.logs ?? []
+  return logs.length > visibleHistoryCount.value
+})
 
 const actions: { key: FinishAction; labelKey: string }[] = [
   { key: 'Spin Finish', labelKey: 'match.sf' },
@@ -58,7 +67,9 @@ function score(winnerId: string, action: FinishAction) {
   if (!activeMatch.value || !isScorable.value) return
   triggerHaptic(action)
   if (isQuickMatch.value && quickMatch.value) {
-    quickMatch.value = applyScorePure(quickMatch.value, winnerId, action)
+    const nextQuick = applyScorePure(quickMatch.value, winnerId, action)
+    quickMatch.value = nextQuick
+    persistQuickMatchToHistory(nextQuick)
     return
   }
   store.applyScore(activeMatch.value.match_id, winnerId, action)
@@ -75,6 +86,14 @@ function undo() {
 
 function back() {
   void router.push(isQuickMatch.value ? '/' : '/lobby')
+}
+
+function loadMoreLogs() {
+  visibleHistoryCount.value += 10
+}
+
+function actionLabel(action: FinishAction) {
+  return t(actions.find((a) => a.key === action)?.labelKey ?? 'match.sf')
 }
 
 function startAgain() {
@@ -150,28 +169,43 @@ watch(
   { immediate: true },
 )
 
+function persistQuickMatchToHistory(m: Match | null) {
+  if (!isQuickMatch.value || !m || m.status !== 'completed' || !includeQuickInHistory.value) return
+  const saveKey = `${m.timestamp}-${m.logs.length}-${m.p1_score}-${m.p2_score}`
+  if (lastSavedQuickMatchKey.value === saveKey) return
+  const endedAt = m.endedAt ?? new Date().toISOString()
+  const archived: Match = {
+    ...m,
+    match_id: `qm-${crypto.randomUUID().slice(0, 8)}`,
+    status: 'completed',
+    timestamp: endedAt,
+    endedAt,
+    tournament_name: 'Quick Match',
+  }
+  if (store.tournamentList.length === 0) {
+    store.newTournament()
+  }
+  store.replaceState({
+    ...store.state,
+    matches: [...store.state.matches, archived],
+  })
+  lastSavedQuickMatchKey.value = saveKey
+}
+
 watch(
-  () => activeMatch.value,
-  (m) => {
-    if (!isQuickMatch.value || !m || m.status !== 'completed' || !includeQuickInHistory.value) return
-    const saveKey = `${m.timestamp}-${m.logs.length}-${m.p1_score}-${m.p2_score}`
-    if (lastSavedQuickMatchKey.value === saveKey) return
-    const endedAt = m.endedAt ?? new Date().toISOString()
-    const archived: Match = {
-      ...m,
-      match_id: `qm-${crypto.randomUUID().slice(0, 8)}`,
-      status: 'completed',
-      timestamp: endedAt,
-      endedAt,
-      tournament_name: 'Quick Match',
-    }
-    store.replaceState({
-      ...store.state,
-      matches: [...store.state.matches, archived],
-    })
-    lastSavedQuickMatchKey.value = saveKey
+  [() => activeMatch.value, includeQuickInHistory],
+  ([m]) => {
+    persistQuickMatchToHistory(m)
   },
-  { deep: true },
+  { deep: true, immediate: true },
+)
+
+watch(
+  () => activeMatch.value?.match_id,
+  () => {
+    visibleHistoryCount.value = 10
+  },
+  { immediate: true },
 )
 </script>
 
@@ -281,7 +315,7 @@ watch(
             <span class="score-action-label text-[11px] font-black uppercase italic text-white/80 landscape:text-[10px] sm:text-xs md:text-sm lg:text-base lg:landscape:text-base xl:text-base xl:landscape:text-base">
               {{ t(a.labelKey) }}
             </span>
-            <span class="score-action-points text-xs font-black landscape:text-[11px] sm:text-sm md:text-lg lg:text-2xl lg:landscape:text-2xl xl:text-2xl xl:landscape:text-2xl">
+            <span class="score-action-points text-xs font-black landscape:text-[11px] sm:text-sm md:text-lg lg:text-xl lg:landscape:text-xl xl:text-xl xl:landscape:text-xl">
               +{{ FINISH_POINTS[a.key] }}
             </span>
           </button>
@@ -350,13 +384,56 @@ watch(
             <span class="score-action-label text-[11px] font-black uppercase italic text-white/80 landscape:text-[10px] sm:text-xs md:text-sm lg:text-base lg:landscape:text-base xl:text-base xl:landscape:text-base">
               {{ t(a.labelKey) }}
             </span>
-            <span class="score-action-points text-xs font-black landscape:text-[11px] sm:text-sm md:text-lg lg:text-2xl lg:landscape:text-2xl xl:text-2xl xl:landscape:text-2xl">
+            <span class="score-action-points text-xs font-black landscape:text-[11px] sm:text-sm md:text-lg lg:text-xl lg:landscape:text-xl xl:text-xl xl:landscape:text-xl">
               +{{ FINISH_POINTS[a.key] }}
             </span>
           </button>
         </div>
       </section>
     </div>
+
+    <section
+      v-if="activeMatch.logs.length"
+      class="mt-2 rounded-2xl border border-slate-800/80 bg-slate-900/40 p-3 sm:p-4"
+    >
+      <div class="mb-2 flex items-center justify-between">
+        <p class="text-[11px] font-black uppercase tracking-[0.15em] text-slate-400">
+          {{ t('match.historyTitle') }}
+        </p>
+        <p class="text-[11px] font-medium text-slate-500">
+          {{ activeMatch.logs.length }}
+        </p>
+      </div>
+      <div class="space-y-1.5">
+        <div
+          v-for="(log, i) in displayedLogs"
+          :key="`${log.timestamp || 'log'}-${log.winner_participant_id}-${i}`"
+          class="flex items-center gap-2 rounded-lg border border-slate-800/80 bg-slate-950/60 px-2.5 py-2 text-xs"
+        >
+          <span class="font-bold text-slate-300">
+            {{
+              log.winner_participant_id === activeP1.id
+                ? activeP1.name
+                : log.winner_participant_id === activeP2.id
+                  ? activeP2.name
+                  : log.winner_participant_id
+            }}
+          </span>
+          <span class="rounded-full border border-slate-700 px-2 py-0.5 text-[10px] font-bold text-slate-400">
+            {{ actionLabel(log.action) }}
+          </span>
+          <span class="ml-auto font-mono font-black text-bx-primary">+{{ log.points }}</span>
+        </div>
+      </div>
+      <button
+        v-if="hasMoreLogs"
+        type="button"
+        class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-slate-300 transition hover:bg-slate-800 hover:text-white"
+        @click="loadMoreLogs"
+      >
+        {{ t('match.viewMore') }}
+      </button>
+    </section>
 
     <transition name="winner">
       <div

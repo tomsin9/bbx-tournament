@@ -174,7 +174,7 @@ const pct = (pid: string) => {
             </button>
           </div>
 
-          <div class="relative flex items-center justify-center">
+          <div class="relative mx-2 flex items-center justify-center md:mx-3">
             <div class="h-px w-12 bg-slate-800 md:h-12 md:w-px"></div>
             <div
               class="absolute flex h-12 w-12 items-center justify-center rounded-full border-2 border-slate-800 bg-slate-950 text-xl font-black italic tracking-tighter text-white"
@@ -246,32 +246,47 @@ const pct = (pid: string) => {
         <div
           v-for="m in store.liveMatches"
           :key="m.match_id"
-          class="group flex items-center justify-between rounded-2xl border border-bx-primary/20 bg-bx-primary/10 p-4 transition-all hover:bg-bx-primary/20"
+          class="group rounded-4xl border border-slate-700 bg-slate-900/45 p-4 ring-1 ring-white/8 transition-all hover:border-bx-primary/35 hover:shadow-[0_10px_26px_rgba(0,0,0,0.22)] sm:p-5"
         >
-          <div class="flex items-center gap-6">
-            <div class="text-right">
-              <p class="text-sm font-bold text-white">{{ playerName(m.p1_participant_id) }}</p>
-              <p class="font-mono text-[10px] font-semibold text-slate-500">
-                {{ t('players.shortId', { id: participantShortId(m.p1_participant_id) }) }}
-              </p>
-              <p class="text-2xl font-black text-white">{{ m.p1_score }}</p>
-            </div>
-            <div class="text-xs font-black text-bx-primary">VS</div>
-            <div class="text-left">
-              <p class="text-sm font-bold text-white">{{ playerName(m.p2_participant_id) }}</p>
-              <p class="font-mono text-[10px] font-semibold text-slate-500">
-                {{ t('players.shortId', { id: participantShortId(m.p2_participant_id) }) }}
-              </p>
-              <p class="text-2xl font-black text-white">{{ m.p2_score }}</p>
-            </div>
-          </div>
-          <div class="flex items-center gap-3">
-            <p v-if="m.logs.length" class="hidden text-xs text-bx-primary/90 sm:block">
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <span class="rounded-full border border-slate-700 bg-slate-900/80 px-2.5 py-1 text-[10px] font-medium text-slate-400">
+              {{ m.logs.length }} {{ t('history.matchDetails') }}
+            </span>
+            <p v-if="m.logs.length" class="hidden text-xs text-slate-400 sm:block">
               {{ t('lobby.lastAction') }}: {{ lastActionLabel(m.logs[m.logs.length - 1]!.action) }}
             </p>
+          </div>
+
+          <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div class="grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-5">
+              <div class="rounded-2xl border border-red-500/25 bg-red-500/10 px-3 py-3 text-center sm:px-4">
+                <p class="truncate text-sm font-bold text-white">{{ playerName(m.p1_participant_id) }}</p>
+                <p class="font-mono text-[10px] font-semibold text-slate-500">
+                  {{ t('players.shortId', { id: participantShortId(m.p1_participant_id) }) }}
+                </p>
+                <p class="mt-2 text-3xl font-black text-red-400">
+                  {{ m.p1_score }}
+                </p>
+              </div>
+
+              <div class="text-center text-xs font-black text-bx-primary">
+                {{ t('history.vs') }}
+              </div>
+
+              <div class="rounded-2xl border border-blue-500/25 bg-blue-500/10 px-3 py-3 text-center sm:px-4">
+                <p class="truncate text-sm font-bold text-white">{{ playerName(m.p2_participant_id) }}</p>
+                <p class="font-mono text-[10px] font-semibold text-slate-500">
+                  {{ t('players.shortId', { id: participantShortId(m.p2_participant_id) }) }}
+                </p>
+                <p class="mt-2 text-3xl font-black text-blue-400">
+                  {{ m.p2_score }}
+                </p>
+              </div>
+            </div>
+
             <button
               type="button"
-              class="rounded-xl bg-bx-primary px-6 py-3 text-xs font-black uppercase tracking-widest text-black transition-all hover:brightness-110"
+              class="w-full rounded-xl bg-bx-primary px-6 py-3 text-xs font-black uppercase tracking-widest text-black transition-all hover:brightness-110 md:w-auto"
               @click="resume(m.match_id)"
             >
               {{ t('lobby.resume') }}
@@ -287,7 +302,7 @@ const pct = (pid: string) => {
         <article
           v-for="(pl, idx) in topPlayers"
           :key="pl.id"
-          class="rounded-2xl border bg-slate-900/30 p-4 ring-1"
+          class="rounded-2xl border bg-slate-900/35 p-4 ring-1"
           :class="podiumBgClasses[idx] ?? 'border-slate-800 ring-white/5'"
         >
           <div class="mb-3 flex items-center justify-between">

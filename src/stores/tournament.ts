@@ -169,6 +169,8 @@ export const useTournamentStore = defineStore('tournament', () => {
           tournament_name: m.tournament_name?.trim() || tournamentName,
           p1_name: participantNameById.get(m.p1_participant_id) ?? m.p1_participant_id,
           p2_name: participantNameById.get(m.p2_participant_id) ?? m.p2_participant_id,
+          p1_bey_name: m.p1_bey_name,
+          p2_bey_name: m.p2_bey_name,
         }))
     })
   })
@@ -419,10 +421,14 @@ export const useTournamentStore = defineStore('tournament', () => {
 
   function startMatch(p1_id: string, p2_id: string): string {
     if (p1_id === p2_id) throw new Error('same_player')
+    const p1 = state.value.participants.find((p) => p.id === p1_id)
+    const p2 = state.value.participants.find((p) => p.id === p2_id)
     const match: Match = {
       match_id: newId('m'),
       p1_participant_id: p1_id,
       p2_participant_id: p2_id,
+      p1_bey_name: p1?.bey_name?.trim() || undefined,
+      p2_bey_name: p2?.bey_name?.trim() || undefined,
       p1_score: 0,
       p2_score: 0,
       logs: [],

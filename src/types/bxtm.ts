@@ -33,6 +33,8 @@ export interface Match {
   match_id: string
   p1_participant_id: string
   p2_participant_id: string
+  p1_bey_name?: string
+  p2_bey_name?: string
   p1_score: number
   p2_score: number
   logs: MatchLogEntry[]

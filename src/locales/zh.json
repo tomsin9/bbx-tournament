@@ -117,6 +117,8 @@
     "winnerIs": "勝方：{name}",
     "startAgain": "再開一場",
     "saveToHistory": "記入歷史",
+    "historyTitle": "本場紀錄",
+    "viewMore": "顯示更多",
     "returnToLobby": "返回大廳",
     "noBey": "未指定陀螺",
     "of": "擊飛勝利",
@@ -138,6 +140,7 @@
     "score": "比分",
     "winner": "勝方：{name}",
     "matchDetails": "對戰詳情",
+    "viewMore": "顯示更多",
     "actions": {
       "sf": "轉停勝利",
       "of": "擊飛勝利",
