@@ -196,7 +196,7 @@ function persistQuickMatchToHistory(m: Match | null) {
 watch(
   [() => activeMatch.value, includeQuickInHistory],
   ([m]) => {
-    persistQuickMatchToHistory(m)
+    persistQuickMatchToHistory(m ?? null)
   },
   { deep: true, immediate: true },
 )
