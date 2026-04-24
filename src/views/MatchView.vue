@@ -20,6 +20,7 @@ const quickTargetPoints = ref(4)
 const includeQuickInHistory = ref(false)
 const lastSavedQuickMatchKey = ref<string | null>(null)
 const visibleHistoryCount = ref(10)
+const logsExpanded = ref(false)
 const QUICK_P1_ID = 'P1'
 const QUICK_P2_ID = 'P2'
 const quickMatch = ref<Match | null>(null)
@@ -204,6 +205,7 @@ watch(
   () => activeMatch.value?.match_id,
   () => {
     visibleHistoryCount.value = 10
+    logsExpanded.value = false
   },
   { immediate: true },
 )
@@ -392,48 +394,57 @@ watch(
       </section>
     </div>
 
-    <section
-      v-if="activeMatch.logs.length"
-      class="mt-2 rounded-2xl border border-slate-800/80 bg-slate-900/40 p-3 sm:p-4"
-    >
-      <div class="mb-2 flex items-center justify-between">
-        <p class="text-[11px] font-black uppercase tracking-[0.15em] text-slate-400">
-          {{ t('match.historyTitle') }}
-        </p>
-        <p class="text-[11px] font-medium text-slate-500">
-          {{ activeMatch.logs.length }}
-        </p>
-      </div>
-      <div class="space-y-1.5">
-        <div
-          v-for="(log, i) in displayedLogs"
-          :key="`${log.timestamp || 'log'}-${log.winner_participant_id}-${i}`"
-          class="flex items-center gap-2 rounded-lg border border-slate-800/80 bg-slate-950/60 px-2.5 py-2 text-xs"
-        >
-          <span class="font-bold text-slate-300">
-            {{
-              log.winner_participant_id === activeP1.id
-                ? activeP1.name
-                : log.winner_participant_id === activeP2.id
-                  ? activeP2.name
-                  : log.winner_participant_id
-            }}
-          </span>
-          <span class="rounded-full border border-slate-700 px-2 py-0.5 text-[10px] font-bold text-slate-400">
-            {{ actionLabel(log.action) }}
-          </span>
-          <span class="ml-auto font-mono font-black text-bx-primary">+{{ log.points }}</span>
+    <div v-if="activeMatch.logs.length" class="pointer-events-none fixed inset-x-0 bottom-2 z-40 px-2.5 sm:bottom-3 sm:px-4">
+      <div class="mx-auto max-w-5xl">
+        <div class="pointer-events-auto ml-auto w-fit">
+          <button
+            type="button"
+            class="inline-flex items-center gap-2 rounded-full border border-slate-700/90 bg-slate-900/90 px-3 py-1.5 text-[11px] font-black uppercase tracking-wider text-slate-200 backdrop-blur-sm transition hover:border-bx-primary/50"
+            @click="logsExpanded = !logsExpanded"
+          >
+            <span>{{ t('match.historyTitle') }}</span>
+            <span class="rounded-full bg-slate-800 px-1.5 py-0.5 text-[10px] text-slate-300">{{ activeMatch.logs.length }}</span>
+          </button>
         </div>
+
+        <transition name="winner">
+          <section
+            v-if="logsExpanded"
+            class="pointer-events-auto mt-2 max-h-[45dvh] overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900/95 p-3 shadow-2xl sm:p-4"
+          >
+            <div class="space-y-1.5">
+              <div
+                v-for="(log, i) in displayedLogs"
+                :key="`${log.timestamp || 'log'}-${log.winner_participant_id}-${i}`"
+                class="flex items-center gap-2 rounded-lg border border-slate-800/80 bg-slate-950/60 px-2.5 py-2 text-xs"
+              >
+                <span class="font-bold text-slate-300">
+                  {{
+                    log.winner_participant_id === activeP1.id
+                      ? activeP1.name
+                      : log.winner_participant_id === activeP2.id
+                        ? activeP2.name
+                        : log.winner_participant_id
+                  }}
+                </span>
+                <span class="rounded-full border border-slate-700 px-2 py-0.5 text-[10px] font-bold text-slate-400">
+                  {{ actionLabel(log.action) }}
+                </span>
+                <span class="ml-auto font-mono font-black text-bx-primary">+{{ log.points }}</span>
+              </div>
+            </div>
+            <button
+              v-if="hasMoreLogs"
+              type="button"
+              class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-slate-300 transition hover:bg-slate-800 hover:text-white"
+              @click="loadMoreLogs"
+            >
+              {{ t('match.viewMore') }}
+            </button>
+          </section>
+        </transition>
       </div>
-      <button
-        v-if="hasMoreLogs"
-        type="button"
-        class="mt-2 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-slate-300 transition hover:bg-slate-800 hover:text-white"
-        @click="loadMoreLogs"
-      >
-        {{ t('match.viewMore') }}
-      </button>
-    </section>
+    </div>
 
     <transition name="winner">
       <div
@@ -458,6 +469,7 @@ watch(
             </i18n-t>
           </p>
           <button
+            v-if="isQuickMatch"
             type="button"
             class="mb-3 w-full rounded-xl border border-white/20 py-3 text-sm font-black uppercase italic tracking-widest text-white active:scale-95 md:rounded-2xl md:py-4 md:text-base"
             @click="startAgain"
