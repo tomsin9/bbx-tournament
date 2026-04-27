@@ -123,7 +123,7 @@ function removeTournament(id: string) {
         </div>
         <div class="text-center">
           <h3 class="text-lg font-bold text-white">{{ t('home.quickMatch') }}</h3>
-          <p class="text-sm text-slate-500">{{ t('home.newTournamentHint') }}</p>
+          <p class="text-sm text-slate-500">{{ t('home.quickMatchHint') }}</p>
         </div>
       </button>
       <button

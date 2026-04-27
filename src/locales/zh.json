@@ -20,10 +20,11 @@
     "match": "對戰"
   },
   "home": {
-    "tagline": "本機優先的 Beyblade X 比賽計分工具。資料只留在你的瀏覽器。",
+    "tagline": "本機優先的爆旋陀螺 X 比賽計分工具。資料只留在你的瀏覽器內。",
     "newTournament": "新建比賽",
-    "createNewTournament": "+ 開始新比賽",
+    "createNewTournament": "開始新比賽",
     "newTournamentHint": "建立全新賽程與名單。",
+    "quickMatchHint": "立即開始一場單次對戰。",
     "currentTournament": "目前賽事",
     "continueCurrentMatch": "繼續當前比賽",
     "import": "匯入 JSON",

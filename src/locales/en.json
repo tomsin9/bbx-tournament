@@ -22,8 +22,9 @@
   "home": {
     "tagline": "Local-first scoring for Beyblade X. Your data stays in the browser.",
     "newTournament": "New tournament",
-    "createNewTournament": "+ Start New Tournament",
+    "createNewTournament": "Start New Tournament",
     "newTournamentHint": "Create a new bracket and player roster.",
+    "quickMatchHint": "Start a one-off match right away.",
     "currentTournament": "Current Tournament",
     "continueCurrentMatch": "Continue current match",
     "import": "Import JSON",
