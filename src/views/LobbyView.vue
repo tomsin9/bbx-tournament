@@ -15,6 +15,24 @@ store.hydrate()
 const p1 = ref('')
 const p2 = ref('')
 const startError = ref<string | null>(null)
+const nextScheduled = computed(() => store.nextScheduledMatch())
+const isManualMode = computed(() => store.tournamentFormat === 'free')
+const eliminationDrawPending = computed(
+  () => store.tournamentFormat === 'single_elimination' && store.matches.length === 0,
+)
+const eliminationDrawRemaining = ref<string[]>([])
+const eliminationDrawPairs = ref<Array<[string, string]>>([])
+const eliminationPairsTarget = computed(() => Math.floor(store.players.length / 2))
+const drawSessionStarted = ref(false)
+const effectiveDrawRemainingCount = computed(() =>
+  drawSessionStarted.value ? eliminationDrawRemaining.value.length : store.players.length,
+)
+const canDrawOneMatch = computed(() => effectiveDrawRemainingCount.value > 1)
+const canFinalizeDraw = computed(() =>
+  effectiveDrawRemainingCount.value <= 1 && eliminationDrawPairs.value.length > 0,
+)
+const isDrawing = ref(false)
+const drawRevealPair = ref<[string, string] | null>(null)
 
 const stats = computed(() => computePlayerStats(store.players, store.matches))
 const currentRound = computed(() => store.matches.length + 1)
@@ -98,6 +116,55 @@ function start() {
   }
 }
 
+function startNextScheduled() {
+  const m = nextScheduled.value
+  if (!m) return
+  void router.push(`/match/${m.match_id}`)
+}
+
+function randomPickAndRemove(ids: string[]): string | null {
+  if (ids.length === 0) return null
+  const idx = Math.floor(Math.random() * ids.length)
+  const [picked] = ids.splice(idx, 1)
+  return picked ?? null
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function ensureDrawPoolReady() {
+  if (!eliminationDrawPending.value) return
+  if (eliminationDrawRemaining.value.length > 0 || eliminationDrawPairs.value.length > 0) return
+  eliminationDrawRemaining.value = store.players.map((p) => p.id)
+  drawSessionStarted.value = true
+}
+
+async function drawOneEliminationMatch() {
+  if (isDrawing.value) return
+  ensureDrawPoolReady()
+  if (eliminationDrawRemaining.value.length < 2) return
+  const pool = [...eliminationDrawRemaining.value]
+  const p1 = randomPickAndRemove(pool)
+  const p2 = randomPickAndRemove(pool)
+  if (!p1 || !p2) return
+  isDrawing.value = true
+  drawRevealPair.value = [p1, p2]
+  await delay(900)
+  eliminationDrawPairs.value = [...eliminationDrawPairs.value, [p1, p2]]
+  eliminationDrawRemaining.value = pool
+  drawRevealPair.value = null
+  isDrawing.value = false
+}
+
+function finalizeEliminationDraw() {
+  if (eliminationDrawPairs.value.length === 0) return
+  store.createSingleEliminationFirstRoundFromPairs(eliminationDrawPairs.value)
+  eliminationDrawPairs.value = []
+  eliminationDrawRemaining.value = []
+  drawSessionStarted.value = false
+}
+
 function resume(id: string) {
   void router.push(`/match/${id}`)
 }
@@ -138,7 +205,7 @@ const pct = (pid: string) => {
       </div>
     </header>
 
-    <section v-if="store.hasPlayers" class="group relative">
+    <!-- <section v-if="store.hasPlayers && isManualMode" class="group relative">
       <div
         class="absolute -inset-1 rounded-[2.5rem] bg-linear-to-r from-bx-primary to-bx-accent opacity-25 blur transition duration-1000 group-hover:opacity-40"
       ></div>
@@ -179,7 +246,7 @@ const pct = (pid: string) => {
             <div
               class="absolute flex h-12 w-12 items-center justify-center rounded-full border-2 border-slate-800 bg-slate-950 text-xl font-black italic tracking-tighter text-white"
             >
-              VS
+              {{ t('history.vs') }}
             </div>
           </div>
 
@@ -232,6 +299,186 @@ const pct = (pid: string) => {
           </span>
         </button>
       </div>
+    </section> -->
+
+    <section v-if="store.hasPlayers && isManualMode" class="relative group">
+      <div class="absolute -inset-1 rounded-[3rem] bg-linear-to-r from-red-600 via-bx-primary to-blue-600 opacity-20 blur-xl group-hover:opacity-30 transition duration-700"></div>
+      
+      <div class="relative rounded-[2.5rem] border border-white/10 bg-slate-950/80 backdrop-blur-md p-6 sm:p-10">
+        <div class="flex flex-col items-center gap-8 md:flex-row">
+          
+          <div class="w-full flex-1 space-y-4">
+            <div class="flex items-center justify-between px-1">
+              <span class="text-[10px] font-black uppercase tracking-[0.2em] text-red-500">{{ t('lobby.p1') }}</span>
+              <span v-if="p1" class="text-[10px] font-bold text-slate-500 uppercase italic">
+                {{ t('lobby.winRate') }}: {{ pct(p1) }}
+              </span>
+            </div>
+            <div class="relative">
+              <select
+                v-model="p1"
+                class="w-full appearance-none rounded-2xl border-2 border-slate-800 bg-slate-900/50 px-5 py-5 text-xl font-black text-white outline-none transition-all focus:border-red-500 focus:ring-4 focus:ring-red-500/10"
+                @change="syncDistinctPlayers('p1')"
+              >
+                <option value="" disabled>{{ t('lobby.selectWarrior') }}</option>
+                <option v-for="pl in store.players" :key="pl.id" :value="pl.id" :disabled="pl.id === p2">
+                  {{ pl.name }} {{ pl.bey_name ? `(${pl.bey_name})` : '' }}
+                </option>
+              </select>
+              <div class="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-slate-500">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" /></svg>
+              </div>
+            </div>
+            <button @click="randomP1" class="w-full py-2.5 rounded-xl border border-red-500/30 bg-red-500/5 text-[10px] font-black uppercase tracking-widest text-red-400 hover:bg-red-500/10 transition-all active:scale-95">
+              {{ t('lobby.random') }}
+            </button>
+          </div>
+
+          <div class="relative flex flex-col items-center justify-center">
+            <div class="hidden md:block h-32 w-px bg-linear-to-b from-red-500/50 to-blue-500/50"></div>
+            <div class="md:hidden w-32 h-px bg-linear-to-r from-red-500/50 to-blue-500/50"></div>
+            <div class="absolute flex h-14 w-14 items-center justify-center rounded-full border-2 border-slate-800 bg-slate-950 shadow-2xl shadow-bx-primary/20">
+              <span class="text-2xl font-black italic tracking-tighter text-white">{{ t('history.vs') }}</span>
+            </div>
+          </div>
+
+          <div class="w-full flex-1 space-y-4">
+            <div class="flex items-center justify-between px-1">
+              <span class="text-[10px] font-black uppercase tracking-[0.2em] text-blue-500">{{ t('lobby.p2') }}</span>
+              <span v-if="p2" class="text-[10px] font-bold text-slate-500 uppercase italic">
+                {{ t('lobby.winRate') }}: {{ pct(p2) }}
+              </span>
+            </div>
+            <div class="relative">
+              <select
+                v-model="p2"
+                class="w-full appearance-none rounded-2xl border-2 border-slate-800 bg-slate-900/50 px-5 py-5 text-xl font-black text-white outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
+                @change="syncDistinctPlayers('p2')"
+              >
+                <option value="" disabled>{{ t('lobby.selectWarrior') }}</option>
+                <option v-for="pl in store.players" :key="pl.id" :value="pl.id" :disabled="pl.id === p1">
+                  {{ pl.name }} {{ pl.bey_name ? `(${pl.bey_name})` : '' }}
+                </option>
+              </select>
+              <div class="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-slate-500">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" /></svg>
+              </div>
+            </div>
+            <button @click="randomP2" class="w-full py-2.5 rounded-xl border border-blue-500/30 bg-blue-500/5 text-[10px] font-black uppercase tracking-widest text-blue-400 hover:bg-blue-500/10 transition-all active:scale-95">
+              {{ t('lobby.random') }}
+            </button>
+          </div>
+        </div>
+
+        <button
+          :disabled="!p1 || !p2"
+          @click="start"
+          class="mt-10 group relative w-full overflow-hidden rounded-3xl bg-bx-primary p-5 transition-all hover:scale-[1.02] active:scale-95 disabled:opacity-30 disabled:grayscale"
+        >
+          <div class="relative z-10 flex items-center justify-center gap-3 text-black font-black italic text-xl tracking-widest uppercase">
+            {{ t('lobby.letsBattle') }}
+            <svg class="w-6 h-6 animate-bounce-x" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
+          </div>
+          <div class="absolute inset-0 bg-linear-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:animate-shimmer"></div>
+        </button>
+      </div>
+    </section>
+
+    <section
+      v-if="store.hasPlayers && !isManualMode"
+      class="rounded-4xl border border-white/10 bg-slate-950 p-6 sm:p-8"
+    >
+      <h2 class="text-sm font-black uppercase tracking-[0.2em] text-slate-500">
+        {{ t('lobby.scheduledModeTitle') }}
+      </h2>
+      <p class="mt-2 text-sm text-slate-400">
+        {{
+          store.tournamentFormat === 'round_robin'
+            ? t('lobby.roundRobinModeHint')
+            : t('lobby.singleEliminationModeHint')
+        }}
+      </p>
+      <div
+        v-if="eliminationDrawPending"
+        class="mt-5 rounded-2xl border border-slate-800 bg-slate-900/40 p-4"
+      >
+        <p class="text-xs font-bold uppercase tracking-widest text-slate-500">
+          {{ t('lobby.drawStageTitle') }}
+        </p>
+        <p class="mt-2 text-sm text-slate-400">
+          {{ t('lobby.drawStageHint') }}
+        </p>
+        <p class="mt-2 text-xs text-slate-500">
+          {{ t('lobby.drawParticipants', { n: store.players.length }) }}
+        </p>
+        <p class="mt-1 text-xs text-slate-500">
+          {{ t('lobby.drawProgress', { n: eliminationDrawPairs.length, total: eliminationPairsTarget }) }}
+        </p>
+        <div
+          v-if="isDrawing && drawRevealPair"
+          class="mt-3 rounded-xl border border-bx-primary/40 bg-bx-primary/10 p-3"
+        >
+          <p class="text-[10px] font-black uppercase tracking-widest text-bx-primary">
+            {{ t('lobby.drawInProgress') }}
+          </p>
+          <p class="mt-2 text-sm font-black text-white animate-pulse">
+            {{ playerName(drawRevealPair[0]) }} <span class="text-bx-primary">{{ t('history.vs') }}</span> {{ playerName(drawRevealPair[1]) }}
+          </p>
+        </div>
+        <ul v-if="eliminationDrawPairs.length" class="mt-3 space-y-1.5 rounded-xl border border-slate-800 bg-slate-950/40 p-3">
+          <li
+            v-for="(pair, idx) in eliminationDrawPairs"
+            :key="pair[0] + '-' + pair[1]"
+            class="text-xs font-semibold text-slate-300"
+          >
+            {{ t('lobby.drawMatchNo', { n: idx + 1 }) }}:
+            {{ playerName(pair[0]) }} {{ t('history.vs') }} {{ playerName(pair[1]) }}
+          </li>
+        </ul>
+        <p v-if="eliminationDrawRemaining.length === 1" class="mt-2 text-xs font-semibold text-amber-300">
+          {{ t('lobby.drawOddPlayer', { name: playerName(eliminationDrawRemaining[0]!) }) }}
+        </p>
+        <div class="mt-4">
+          <button
+            v-if="canDrawOneMatch"
+            type="button"
+            class="w-full rounded-xl bg-bx-primary px-6 py-3 text-xs font-black uppercase tracking-widest text-black transition-all hover:brightness-110 disabled:opacity-40"
+            :disabled="effectiveDrawRemainingCount < 2 || isDrawing"
+            @click="drawOneEliminationMatch"
+          >
+            {{ t('lobby.drawOneMatch') }}
+          </button>
+          <button
+            v-else-if="canFinalizeDraw"
+            type="button"
+            class="w-full rounded-xl border border-slate-700 bg-slate-900 px-6 py-3 text-xs font-black uppercase tracking-widest text-slate-200 transition-all hover:border-bx-primary/60 disabled:opacity-30"
+            :disabled="eliminationDrawPairs.length === 0 || isDrawing"
+            @click="finalizeEliminationDraw"
+          >
+            {{ t('lobby.drawFinalize') }}
+          </button>
+        </div>
+      </div>
+      <div v-if="nextScheduled" class="mt-5 rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+        <p class="text-xs font-bold uppercase tracking-widest text-slate-500">{{ t('lobby.nextMatch') }}</p>
+        <p class="mt-2 text-lg font-black text-white">
+          {{ playerName(nextScheduled.p1_participant_id) }} <span class="text-bx-primary">{{ t('history.vs') }}</span>
+          {{ playerName(nextScheduled.p2_participant_id) }}
+        </p>
+        <button
+          type="button"
+          class="mt-4 w-full rounded-xl bg-bx-primary px-6 py-3 text-xs font-black uppercase tracking-widest text-black transition-all hover:brightness-110"
+          @click="startNextScheduled"
+        >
+          {{ t('lobby.startNextScheduled') }}
+        </button>
+      </div>
+      <p
+        v-else-if="!eliminationDrawPending"
+        class="mt-5 rounded-2xl border border-dashed border-slate-800 px-4 py-5 text-center text-sm text-slate-500"
+      >
+        {{ t('lobby.noScheduledRemaining') }}
+      </p>
     </section>
 
     <section v-if="store.liveMatches.length" class="space-y-4">

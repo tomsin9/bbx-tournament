@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import type { BattleFormat, PlayerProfile, StadiumType, TournamentParticipant } from '@/types/bxtm'
+import type {
+  BattleFormat,
+  PlayerProfile,
+  StadiumType,
+  TournamentFormat,
+  TournamentParticipant,
+} from '@/types/bxtm'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useTournamentStore } from '@/stores/tournament'
@@ -16,6 +22,9 @@ const isNewSetup = computed(() => route.query.mode === 'new')
 const name = ref(store.tournamentName || '')
 const target = ref(store.targetPoints)
 const battleFormat = ref<BattleFormat>(store.battleFormat)
+const tournamentFormat = ref<TournamentFormat>(store.tournamentFormat)
+const playoffEnabled = ref(store.playoffEnabled)
+const playoffThirdPlace = ref(store.playoffThirdPlace)
 const stadiumType = ref<StadiumType>(store.stadiumType)
 const draftPlayers = ref<TournamentParticipant[]>([])
 const playerName = ref('')
@@ -55,6 +64,9 @@ onMounted(() => {
     name.value = ''
     target.value = 4
     battleFormat.value = 'singles'
+    tournamentFormat.value = 'free'
+    playoffEnabled.value = false
+    playoffThirdPlace.value = true
     stadiumType.value = 'xtreme_standard'
     draftPlayers.value = []
     return
@@ -62,7 +74,17 @@ onMounted(() => {
   name.value = store.tournamentName
   target.value = store.targetPoints
   battleFormat.value = store.battleFormat
+  tournamentFormat.value = store.tournamentFormat
+  playoffEnabled.value = store.playoffEnabled
+  playoffThirdPlace.value = store.playoffThirdPlace
   stadiumType.value = store.stadiumType
+})
+
+watch(tournamentFormat, (next) => {
+  if (next !== 'round_robin') {
+    playoffEnabled.value = false
+    playoffThirdPlace.value = true
+  }
 })
 
 function libKey(p: { id: string }) {
@@ -260,9 +282,13 @@ function save() {
     tournamentName: name.value,
     targetPoints: target.value,
     battleFormat: battleFormat.value,
+    tournamentFormat: tournamentFormat.value,
+    playoffEnabled: playoffEnabled.value,
+    playoffThirdPlace: playoffThirdPlace.value,
     stadiumType: stadiumType.value,
     players: rosterPlayers.value,
   })
+  store.buildInitialScheduledMatches()
   void router.push('/lobby')
 }
 </script>
@@ -330,6 +356,61 @@ function save() {
           <input v-model.number="target" type="range" min="1" max="10" class="h-2 flex-1 accent-bx-primary" />
           <span class="min-w-12 text-center text-2xl font-black text-bx-primary">{{ target }}</span>
         </div>
+      </div>
+
+      <div class="group space-y-2">
+        <label class="text-xs font-black uppercase tracking-widest text-slate-500 transition-colors group-focus-within:text-bx-primary">
+          {{ t('setup.tournamentFormat') }}
+        </label>
+        <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <button
+            type="button"
+            class="rounded-xl border px-4 py-3 text-xs font-bold uppercase tracking-widest transition-all"
+            :class="
+              tournamentFormat === 'free'
+                ? 'border-bx-primary bg-bx-primary text-black'
+                : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-bx-primary/60'
+            "
+            @click="tournamentFormat = 'free'"
+          >
+            {{ t('setup.tournamentFormatFree') }}
+          </button>
+          <button
+            type="button"
+            class="rounded-xl border px-4 py-3 text-xs font-bold uppercase tracking-widest transition-all"
+            :class="
+              tournamentFormat === 'round_robin'
+                ? 'border-bx-primary bg-bx-primary text-black'
+                : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-bx-primary/60'
+            "
+            @click="tournamentFormat = 'round_robin'"
+          >
+            {{ t('setup.tournamentFormatRoundRobin') }}
+          </button>
+          <button
+            type="button"
+            class="rounded-xl border px-4 py-3 text-xs font-bold uppercase tracking-widest transition-all"
+            :class="
+              tournamentFormat === 'single_elimination'
+                ? 'border-bx-primary bg-bx-primary text-black'
+                : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-bx-primary/60'
+            "
+            @click="tournamentFormat = 'single_elimination'"
+          >
+            {{ t('setup.tournamentFormatSingleElimination') }}
+          </button>
+        </div>
+      </div>
+
+      <div v-if="tournamentFormat === 'round_robin'" class="group space-y-3 rounded-2xl border border-slate-800 bg-slate-900/50 p-4">
+        <label class="flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-slate-300">
+          <input v-model="playoffEnabled" type="checkbox" class="h-4 w-4 accent-bx-primary" />
+          {{ t('setup.top4Playoff') }}
+        </label>
+        <label class="flex items-center gap-3 text-xs font-bold uppercase tracking-widest text-slate-500" :class="playoffEnabled ? 'text-slate-300' : 'opacity-50'">
+          <input v-model="playoffThirdPlace" type="checkbox" class="h-4 w-4 accent-bx-primary" :disabled="!playoffEnabled" />
+          {{ t('setup.thirdPlaceMatch') }}
+        </label>
       </div>
 
       <div class="group space-y-2">
@@ -658,7 +739,9 @@ function save() {
         :disabled="!canSave"
         @click="save"
       >
-        <span class="relative z-10">{{ t('setup.nextGoLobby') }}</span>
+        <span class="relative z-10">
+          {{ isNewSetup ? t('setup.nextGoLobby') : t('setup.saveGoLobby') }}
+        </span>
         <svg
           class="relative z-10 h-5 w-5 transition-transform group-hover:translate-x-1"
           fill="none"

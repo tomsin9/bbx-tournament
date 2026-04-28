@@ -15,6 +15,13 @@ export interface TournamentParticipant {
 }
 
 export type MatchStatus = 'pending' | 'in_progress' | 'completed'
+export type MatchStage =
+  | 'round_robin'
+  | 'semifinal'
+  | 'final'
+  | 'third_place'
+  | 'elimination'
+  | 'manual'
 
 export type FinishAction =
   | 'Over Finish'
@@ -45,9 +52,11 @@ export interface Match {
   target_points: number
   tournament_name?: string
   winner_participant_id?: string
+  stage?: MatchStage
 }
 
 export type BattleFormat = 'singles' | 'doubles'
+export type TournamentFormat = 'free' | 'round_robin' | 'single_elimination'
 
 export type StadiumType =
   | 'xtreme_standard'
@@ -61,6 +70,9 @@ export interface BxTmState {
   tournament_name: string
   target_points: number
   battle_format: BattleFormat
+  tournament_format: TournamentFormat
+  playoff_enabled: boolean
+  playoff_third_place: boolean
   stadium_type: StadiumType
   participants: TournamentParticipant[]
   matches: Match[]
@@ -95,6 +107,9 @@ export function emptyState(): BxTmState {
     tournament_name: '',
     target_points: 4,
     battle_format: 'singles',
+    tournament_format: 'free',
+    playoff_enabled: false,
+    playoff_third_place: true,
     stadium_type: 'xtreme_standard',
     participants: [],
     matches: [],

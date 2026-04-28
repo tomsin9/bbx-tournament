@@ -366,6 +366,7 @@ watch(
           </h3>
           <div class="flex flex-col gap-3">
             <label
+              v-if="isQuickMatch"
               class="w-full py-4 text-white font-black uppercase italic tracking-widest transition-all flex items-center justify-center gap-3 cursor-pointer"
             >
               <input

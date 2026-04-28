@@ -11,8 +11,14 @@ store.hydrate()
 
 const fileInput = ref<HTMLInputElement | null>(null)
 const importError = ref<string | null>(null)
+const currentTournamentItem = computed(() =>
+  store.tournamentList.find((item) => item.isActive) ?? null,
+)
 const hasCurrentTournament = computed(
-  () => store.tournamentName.trim().length > 0 || store.hasPlayers || store.matches.length > 0,
+  () =>
+    !!currentTournamentItem.value &&
+    !currentTournamentItem.value.isCompleted &&
+    (store.tournamentName.trim().length > 0 || store.hasPlayers || store.matches.length > 0),
 )
 const currentLiveMatchId = computed(() => store.liveMatches[0]?.match_id ?? null)
 
@@ -225,7 +231,10 @@ function removeTournament(id: string) {
           <div class="min-w-0 space-y-1">
             <p class="truncate font-bold text-slate-200 transition-colors group-hover:text-white">
               {{ item.name }}
-              <span v-if="item.isActive" class="ml-2 text-[10px] uppercase text-bx-primary">
+              <span v-if="item.isCompleted" class="ml-2 text-[10px] uppercase text-emerald-400">
+                ● {{ t('common.completed') }}
+              </span>
+              <span v-else-if="item.isActive" class="ml-2 text-[10px] uppercase text-bx-primary">
                 ● {{ t('common.active') }}
               </span>
             </p>

@@ -7,6 +7,7 @@ import type {
   Match,
   PlayerProfile,
   StadiumType,
+  TournamentFormat,
   TournamentParticipant,
   TournamentRecord,
 } from '@/types/bxtm'
@@ -33,6 +34,45 @@ function uniqueCombos(values: Array<string | undefined>): string[] {
 
 function mergeProfileCombos(profile: PlayerProfile, beyName?: string): string[] {
   return uniqueCombos([...(profile.bey_combos ?? []), profile.default_bey_name, beyName])
+}
+
+function shuffle<T>(values: T[]): T[] {
+  const out = [...values]
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[out[i], out[j]] = [out[j]!, out[i]!]
+  }
+  return out
+}
+
+function createRoundRobinPairs(ids: string[]): Array<[string, string]> {
+  if (ids.length < 2) return []
+  const all = [...ids]
+  if (all.length % 2 === 1) all.push('__BYE__')
+  const rounds = all.length - 1
+  const half = all.length / 2
+  const rotation = [...all]
+  const pairs: Array<[string, string]> = []
+  for (let round = 0; round < rounds; round += 1) {
+    for (let i = 0; i < half; i += 1) {
+      const a = rotation[i]!
+      const b = rotation[rotation.length - 1 - i]!
+      if (a !== '__BYE__' && b !== '__BYE__') pairs.push([a, b])
+    }
+    const fixed = rotation[0]!
+    const moved = rotation.pop()!
+    rotation.splice(1, 0, moved)
+    rotation[0] = fixed
+  }
+  return pairs
+}
+
+function completedWinnerId(match: Match): string | null {
+  if (match.status !== 'completed') return null
+  if (match.winner_participant_id) return match.winner_participant_id
+  if (match.p1_score > match.p2_score) return match.p1_participant_id
+  if (match.p2_score > match.p1_score) return match.p2_participant_id
+  return null
 }
 
 export const useTournamentStore = defineStore('tournament', () => {
@@ -107,6 +147,9 @@ export const useTournamentStore = defineStore('tournament', () => {
   const matches = computed(() => state.value.matches)
   const tournamentList = computed(() =>
     tournaments.value.map((t) => ({
+      isCompleted:
+        t.state.matches.length > 0 &&
+        t.state.matches.every((m) => m.status === 'completed'),
       id: t.id,
       name: t.state.tournament_name || 'Untitled',
       players: t.state.participants.length,
@@ -131,6 +174,24 @@ export const useTournamentStore = defineStore('tournament', () => {
     get: () => state.value.battle_format,
     set: (v: BattleFormat) => {
       state.value.battle_format = v
+    },
+  })
+  const tournamentFormat = computed({
+    get: () => state.value.tournament_format,
+    set: (v: TournamentFormat) => {
+      state.value.tournament_format = v
+    },
+  })
+  const playoffEnabled = computed({
+    get: () => state.value.playoff_enabled,
+    set: (v: boolean) => {
+      state.value.playoff_enabled = v
+    },
+  })
+  const playoffThirdPlace = computed({
+    get: () => state.value.playoff_third_place,
+    set: (v: boolean) => {
+      state.value.playoff_third_place = v
     },
   })
   const stadiumType = computed({
@@ -201,6 +262,9 @@ export const useTournamentStore = defineStore('tournament', () => {
     tournamentName: string
     targetPoints: number
     battleFormat: BattleFormat
+    tournamentFormat: TournamentFormat
+    playoffEnabled: boolean
+    playoffThirdPlace: boolean
     stadiumType: StadiumType
     players: TournamentParticipant[]
   }) {
@@ -209,9 +273,303 @@ export const useTournamentStore = defineStore('tournament', () => {
       tournament_name: payload.tournamentName.trim(),
       target_points: Math.max(1, Math.floor(payload.targetPoints)),
       battle_format: payload.battleFormat,
+      tournament_format: payload.tournamentFormat,
+      playoff_enabled: payload.playoffEnabled,
+      playoff_third_place: payload.playoffThirdPlace,
       stadium_type: payload.stadiumType,
       participants: payload.players,
+      matches: [],
     }))
+  }
+
+  function buildInitialScheduledMatches() {
+    if (state.value.tournament_format === 'free') return
+    if (state.value.matches.length > 0) return
+    const ids = state.value.participants.map((p) => p.id)
+    if (ids.length < 2) return
+    if (state.value.tournament_format === 'round_robin') {
+      const pairs = createRoundRobinPairs(ids)
+      const now = new Date().toISOString()
+      const created = pairs.map((pair) => {
+        const p1 = state.value.participants.find((p) => p.id === pair[0])
+        const p2 = state.value.participants.find((p) => p.id === pair[1])
+        return {
+          match_id: newId('m'),
+          p1_participant_id: pair[0],
+          p2_participant_id: pair[1],
+          p1_bey_name: p1?.bey_name?.trim() || undefined,
+          p2_bey_name: p2?.bey_name?.trim() || undefined,
+          p1_score: 0,
+          p2_score: 0,
+          logs: [],
+          status: 'pending' as const,
+          timestamp: now,
+          target_points: state.value.target_points,
+          tournament_name: state.value.tournament_name || undefined,
+          stage: 'round_robin' as const,
+        }
+      })
+      updateState((s) => ({ ...s, matches: [...s.matches, ...created] }))
+      return
+    }
+    // Single elimination now requires an explicit draw action
+    // before creating first-round pairings.
+  }
+
+  function eliminationAliveParticipantIds(): string[] {
+    const eliminated = new Set<string>()
+    for (const m of state.value.matches) {
+      if (m.status !== 'completed') continue
+      if (m.p1_score > m.p2_score) eliminated.add(m.p2_participant_id)
+      else if (m.p2_score > m.p1_score) eliminated.add(m.p1_participant_id)
+    }
+    return state.value.participants.map((p) => p.id).filter((id) => !eliminated.has(id))
+  }
+
+  function ensureNextEliminationRound() {
+    if (state.value.tournament_format !== 'single_elimination') return
+    if (state.value.matches.length === 0) return
+    const hasLiveOrPending = state.value.matches.some(
+      (m) => m.status === 'pending' || m.status === 'in_progress',
+    )
+    if (hasLiveOrPending) return
+    const alive = eliminationAliveParticipantIds()
+    if (alive.length <= 1) return
+    const shuffled = shuffle(alive)
+    const toCreate: Match[] = []
+    for (let i = 0; i + 1 < shuffled.length; i += 2) {
+      const p1Id = shuffled[i]!
+      const p2Id = shuffled[i + 1]!
+      const p1 = state.value.participants.find((p) => p.id === p1Id)
+      const p2 = state.value.participants.find((p) => p.id === p2Id)
+      toCreate.push({
+        match_id: newId('m'),
+        p1_participant_id: p1Id,
+        p2_participant_id: p2Id,
+        p1_bey_name: p1?.bey_name?.trim() || undefined,
+        p2_bey_name: p2?.bey_name?.trim() || undefined,
+        p1_score: 0,
+        p2_score: 0,
+        logs: [],
+        status: 'pending',
+        timestamp: new Date().toISOString(),
+        target_points: state.value.target_points,
+        tournament_name: state.value.tournament_name || undefined,
+        stage: 'elimination',
+      })
+    }
+    if (toCreate.length > 0) {
+      updateState((s) => ({ ...s, matches: [...s.matches, ...toCreate] }))
+    }
+  }
+
+  function drawSingleEliminationFirstRound() {
+    if (state.value.tournament_format !== 'single_elimination') return
+    if (state.value.matches.length > 0) return
+    const shuffled = shuffle(state.value.participants.map((p) => p.id))
+    if (shuffled.length < 2) return
+    const now = new Date().toISOString()
+    const toCreate: Match[] = []
+    for (let i = 0; i + 1 < shuffled.length; i += 2) {
+      const p1Id = shuffled[i]!
+      const p2Id = shuffled[i + 1]!
+      const p1 = state.value.participants.find((p) => p.id === p1Id)
+      const p2 = state.value.participants.find((p) => p.id === p2Id)
+      toCreate.push({
+        match_id: newId('m'),
+        p1_participant_id: p1Id,
+        p2_participant_id: p2Id,
+        p1_bey_name: p1?.bey_name?.trim() || undefined,
+        p2_bey_name: p2?.bey_name?.trim() || undefined,
+        p1_score: 0,
+        p2_score: 0,
+        logs: [],
+        status: 'pending',
+        timestamp: now,
+        target_points: state.value.target_points,
+        tournament_name: state.value.tournament_name || undefined,
+        stage: 'elimination',
+      })
+    }
+    if (toCreate.length > 0) {
+      updateState((s) => ({ ...s, matches: [...s.matches, ...toCreate] }))
+    }
+  }
+
+  function createSingleEliminationFirstRoundFromPairs(pairs: Array<[string, string]>) {
+    if (state.value.tournament_format !== 'single_elimination') return
+    if (state.value.matches.length > 0) return
+    if (pairs.length === 0) return
+    const now = new Date().toISOString()
+    const toCreate: Match[] = []
+    for (const [p1Id, p2Id] of pairs) {
+      const p1 = state.value.participants.find((p) => p.id === p1Id)
+      const p2 = state.value.participants.find((p) => p.id === p2Id)
+      if (!p1 || !p2 || p1Id === p2Id) continue
+      toCreate.push({
+        match_id: newId('m'),
+        p1_participant_id: p1Id,
+        p2_participant_id: p2Id,
+        p1_bey_name: p1.bey_name?.trim() || undefined,
+        p2_bey_name: p2.bey_name?.trim() || undefined,
+        p1_score: 0,
+        p2_score: 0,
+        logs: [],
+        status: 'pending',
+        timestamp: now,
+        target_points: state.value.target_points,
+        tournament_name: state.value.tournament_name || undefined,
+        stage: 'elimination',
+      })
+    }
+    if (toCreate.length > 0) {
+      updateState((s) => ({ ...s, matches: [...s.matches, ...toCreate] }))
+    }
+  }
+
+  function regularSeasonMatches(): Match[] {
+    return state.value.matches.filter((m) => m.stage === 'round_robin')
+  }
+
+  function rankRoundRobinParticipants(): string[] {
+    const regular = regularSeasonMatches().filter((m) => m.status === 'completed')
+    const stat = new Map<string, { wins: number; losses: number; scored: number; conceded: number }>()
+    const ensure = (id: string) => {
+      if (!stat.has(id)) stat.set(id, { wins: 0, losses: 0, scored: 0, conceded: 0 })
+      return stat.get(id)!
+    }
+    for (const p of state.value.participants) ensure(p.id)
+    for (const m of regular) {
+      const p1 = ensure(m.p1_participant_id)
+      const p2 = ensure(m.p2_participant_id)
+      p1.scored += m.p1_score
+      p1.conceded += m.p2_score
+      p2.scored += m.p2_score
+      p2.conceded += m.p1_score
+      const winner = completedWinnerId(m)
+      if (winner === m.p1_participant_id) {
+        p1.wins += 1
+        p2.losses += 1
+      } else if (winner === m.p2_participant_id) {
+        p2.wins += 1
+        p1.losses += 1
+      }
+    }
+    return [...state.value.participants]
+      .sort((a, b) => {
+        const sa = stat.get(a.id)!
+        const sb = stat.get(b.id)!
+        const winsDiff = sb.wins - sa.wins
+        if (winsDiff !== 0) return winsDiff
+        const diffA = sa.scored - sa.conceded
+        const diffB = sb.scored - sb.conceded
+        if (diffB !== diffA) return diffB - diffA
+        if (sb.scored !== sa.scored) return sb.scored - sa.scored
+        return a.name.localeCompare(b.name)
+      })
+      .map((p) => p.id)
+  }
+
+  function maybeCreateTop4Playoff() {
+    if (state.value.tournament_format !== 'round_robin' || !state.value.playoff_enabled) return
+    const regular = regularSeasonMatches()
+    if (regular.length === 0) return
+    if (regular.some((m) => m.status !== 'completed')) return
+    const hasPlayoff = state.value.matches.some(
+      (m) => m.stage === 'semifinal' || m.stage === 'final' || m.stage === 'third_place',
+    )
+    if (hasPlayoff) return
+    const ranked = rankRoundRobinParticipants()
+    if (ranked.length < 4) return
+    const semiPairs: Array<[string, string]> = [
+      [ranked[0]!, ranked[3]!],
+      [ranked[1]!, ranked[2]!],
+    ]
+    const now = new Date().toISOString()
+    const semis: Match[] = semiPairs.map(([p1Id, p2Id]) => {
+      const p1 = state.value.participants.find((p) => p.id === p1Id)
+      const p2 = state.value.participants.find((p) => p.id === p2Id)
+      return {
+        match_id: newId('m'),
+        p1_participant_id: p1Id,
+        p2_participant_id: p2Id,
+        p1_bey_name: p1?.bey_name?.trim() || undefined,
+        p2_bey_name: p2?.bey_name?.trim() || undefined,
+        p1_score: 0,
+        p2_score: 0,
+        logs: [],
+        status: 'pending',
+        timestamp: now,
+        target_points: state.value.target_points,
+        tournament_name: state.value.tournament_name || undefined,
+        stage: 'semifinal',
+      }
+    })
+    updateState((s) => ({ ...s, matches: [...s.matches, ...semis] }))
+  }
+
+  function maybeAdvanceTop4Playoff() {
+    if (state.value.tournament_format !== 'round_robin' || !state.value.playoff_enabled) return
+    const semis = state.value.matches.filter((m) => m.stage === 'semifinal')
+    if (semis.length < 2 || semis.some((m) => m.status !== 'completed')) return
+    const winners = semis.map((m) => completedWinnerId(m)).filter((id): id is string => Boolean(id))
+    if (winners.length !== 2) return
+    const loserOf = (m: Match, winnerId: string) =>
+      winnerId === m.p1_participant_id ? m.p2_participant_id : m.p1_participant_id
+    const losers = [loserOf(semis[0]!, winners[0]!), loserOf(semis[1]!, winners[1]!)]
+    const hasFinal = state.value.matches.some((m) => m.stage === 'final')
+    const hasThird = state.value.matches.some((m) => m.stage === 'third_place')
+    const toCreate: Match[] = []
+    const now = new Date().toISOString()
+    if (!hasFinal) {
+      const p1 = state.value.participants.find((p) => p.id === winners[0])
+      const p2 = state.value.participants.find((p) => p.id === winners[1])
+      toCreate.push({
+        match_id: newId('m'),
+        p1_participant_id: winners[0]!,
+        p2_participant_id: winners[1]!,
+        p1_bey_name: p1?.bey_name?.trim() || undefined,
+        p2_bey_name: p2?.bey_name?.trim() || undefined,
+        p1_score: 0,
+        p2_score: 0,
+        logs: [],
+        status: 'pending',
+        timestamp: now,
+        target_points: state.value.target_points,
+        tournament_name: state.value.tournament_name || undefined,
+        stage: 'final',
+      })
+    }
+    if (state.value.playoff_third_place && !hasThird) {
+      const p1 = state.value.participants.find((p) => p.id === losers[0])
+      const p2 = state.value.participants.find((p) => p.id === losers[1])
+      toCreate.push({
+        match_id: newId('m'),
+        p1_participant_id: losers[0]!,
+        p2_participant_id: losers[1]!,
+        p1_bey_name: p1?.bey_name?.trim() || undefined,
+        p2_bey_name: p2?.bey_name?.trim() || undefined,
+        p1_score: 0,
+        p2_score: 0,
+        logs: [],
+        status: 'pending',
+        timestamp: now,
+        target_points: state.value.target_points,
+        tournament_name: state.value.tournament_name || undefined,
+        stage: 'third_place',
+      })
+    }
+    if (toCreate.length > 0) {
+      updateState((s) => ({ ...s, matches: [...s.matches, ...toCreate] }))
+    }
+  }
+
+  function nextScheduledMatch(): Match | undefined {
+    buildInitialScheduledMatches()
+    maybeCreateTop4Playoff()
+    maybeAdvanceTop4Playoff()
+    ensureNextEliminationRound()
+    return state.value.matches.find((m) => m.status === 'pending' || m.status === 'in_progress')
   }
 
   function addOrUpdatePlayer(payload: { id?: string; name: string; bey_name?: string }) {
@@ -448,6 +806,9 @@ export const useTournamentStore = defineStore('tournament', () => {
     const next = [...state.value.matches]
     next[idx] = updated
     updateState((s) => ({ ...s, matches: next }))
+    maybeCreateTop4Playoff()
+    maybeAdvanceTop4Playoff()
+    ensureNextEliminationRound()
   }
 
   function undo(matchId: string) {
@@ -477,6 +838,9 @@ export const useTournamentStore = defineStore('tournament', () => {
     tournamentName,
     targetPoints,
     battleFormat,
+    tournamentFormat,
+    playoffEnabled,
+    playoffThirdPlace,
     stadiumType,
     hasPlayers,
     playerLibrary,
@@ -487,6 +851,10 @@ export const useTournamentStore = defineStore('tournament', () => {
     switchTournament,
     deleteTournament,
     applySetup,
+    buildInitialScheduledMatches,
+    nextScheduledMatch,
+    drawSingleEliminationFirstRound,
+    createSingleEliminationFirstRoundFromPairs,
     addOrUpdatePlayer,
     removePlayer,
     addPlayersFromLibrary,

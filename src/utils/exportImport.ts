@@ -3,8 +3,10 @@ import type {
   BxTmState,
   FinishAction,
   Match,
+  MatchStage,
   MatchLogEntry,
   StadiumType,
+  TournamentFormat,
   TournamentParticipant,
 } from '@/types/bxtm'
 import { APP_VERSION, FINISH_POINTS, emptyState } from '@/types/bxtm'
@@ -23,6 +25,19 @@ const STADIUM_TYPES = new Set<StadiumType>([
   'three_player',
   'custom',
 ])
+const MATCH_STAGES = new Set<MatchStage>([
+  'round_robin',
+  'semifinal',
+  'final',
+  'third_place',
+  'elimination',
+  'manual',
+])
+const TOURNAMENT_FORMATS = new Set<TournamentFormat>([
+  'free',
+  'round_robin',
+  'single_elimination',
+])
 
 function coerceBattleFormat(v: unknown): BattleFormat {
   return typeof v === 'string' && BATTLE_FORMATS.has(v as BattleFormat) ? (v as BattleFormat) : 'singles'
@@ -32,6 +47,12 @@ function coerceStadiumType(v: unknown): StadiumType {
   return typeof v === 'string' && STADIUM_TYPES.has(v as StadiumType)
     ? (v as StadiumType)
     : 'xtreme_standard'
+}
+
+function coerceTournamentFormat(v: unknown): TournamentFormat {
+  return typeof v === 'string' && TOURNAMENT_FORMATS.has(v as TournamentFormat)
+    ? (v as TournamentFormat)
+    : 'free'
 }
 
 export type ParseResult =
@@ -128,6 +149,7 @@ function coerceMatch(v: unknown, defaultTargetPoints: number): Match | null {
         : typeof o.winner_id === 'string'
           ? o.winner_id
           : undefined,
+    stage: typeof o.stage === 'string' && MATCH_STAGES.has(o.stage as MatchStage) ? (o.stage as MatchStage) : undefined,
   }
 }
 
@@ -188,6 +210,10 @@ export function parseBxTmJson(text: string): ParseResult {
     tournament_name: root.tournament_name,
     target_points: root.target_points,
     battle_format: coerceBattleFormat(root.battle_format),
+    tournament_format: coerceTournamentFormat(root.tournament_format),
+    playoff_enabled: Boolean(root.playoff_enabled),
+    playoff_third_place:
+      root.playoff_third_place === undefined ? true : Boolean(root.playoff_third_place),
     stadium_type: coerceStadiumType(root.stadium_type),
     participants,
     matches,
@@ -260,6 +286,10 @@ export function normalizeImportedState(raw: unknown): ParseResult {
       tournament_name: typeof root.tournament_name === 'string' ? root.tournament_name : '',
       target_points: defaultTarget,
       battle_format: coerceBattleFormat(root.battle_format),
+      tournament_format: coerceTournamentFormat(root.tournament_format),
+      playoff_enabled: Boolean(root.playoff_enabled),
+      playoff_third_place:
+        root.playoff_third_place === undefined ? true : Boolean(root.playoff_third_place),
       stadium_type: coerceStadiumType(root.stadium_type),
       participants,
       matches,
