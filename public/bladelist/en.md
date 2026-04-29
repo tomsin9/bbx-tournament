@@ -1,0 +1,193 @@
+- **BX-01** DranSword
+- **BX-02** HellsScythe
+- **BX-03** WizardArrow
+- **BX-04** KnightShield
+- **BX-05** WizardArrow
+- **BX-06** KnightShield
+- **BX-07** DranSword Special Ver.
+- **BX-08-01** HellsScythe
+- **BX-08-02** KnightShield
+- **BX-08-03** WizardArrow
+- **BX-13** KnightLance
+- **BX-14-01** SharkEdge
+- **BX-14-02** SharkEdge
+- **BX-14-03** DranSword
+- **BX-14-04** HellsScythe
+- **BX-14-05** KnightShield
+- **BX-14-06** WizardArrow
+- **BX-15** LeonClaw
+- **BX-16-01** ViperTail
+- **BX-16-02** ViperTail
+- **BX-16-03** ViperTail
+- **BX-17-01** DranSword Red Ver.
+- **BX-17-02** WizardArrow Blue Ver.
+- **BX-19** RhinoHorn
+- **BX-20-01** DranDagger
+- **BX-20-02** SharkEdge
+- **BX-20-03** KnightShield
+- **BX-21-01** HellsChain
+- **BX-21-02** KnightLance
+- **BX-21-03** WizardArrow
+- **BX-22** DranSword
+- **BX-23** PhoenixWing (Metal Coat: Red)
+- **BX-24-01** WyvernGale
+- **BX-24-02** WyvernGale
+- **BX-24-03** KnightLance
+- **BX-24-04** ViperTail
+- **BX-24-05** LeonClaw
+- **BX-24-06** WizardArrow
+- **BX-26** UnicornSting
+- **BX-27-01** SphinxCowl
+- **BX-27-02** SphinxCowl
+- **BX-27-03** SphinxCowl
+- **BX-31-01** TyrannoBeat
+- **BX-31-02** TyrannoBeat
+- **BX-31-03** HellsChain
+- **BX-31-04** DranDagger
+- **BX-31-05** SharkEdge
+- **BX-31-06** RhinoHorn
+- **BX-33** WeissTiger
+- **BX-34** CobaltDragoon
+- **BX-35-01** BlackShell
+- **BX-35-02** BlackShell
+- **BX-35-03** UnicornSting
+- **BX-35-04** WizardRod
+- **BX-35-05** PhoenixWing
+- **BX-35-06** ViperTail
+- **BX-36-01** WhaleWave
+- **BX-36-02** WhaleWave
+- **BX-36-03** WhaleWave
+- **BX-37** BearScratch
+- **BX-38** CrimsonGaruda
+- **BX-39-01** LeonCrest
+- **BX-39-02** LeonCrest
+- **BX-39-03** LeonCrest
+- **BX-44** TriceraPhalanx
+- **BX-45** SamuraiSaber
+- **BX-46-01** CobaltDrake (Metal Coat: Red)
+- **BX-46-02** AriesReck
+- **BX-48-01** CobaltDragoon (Metal Coat: Black)
+- **BX-48-02** SharkEdge (Metal Coat: Blue)
+- **BX-48-03** MammothTusk (Metal Coat: Black)
+- **BX-48-04** HellsScythe (Metal Coat: Gold)
+- **BX-48-05** DranBuster (Metal Coat: Red)
+- **BX-49** DranSword (Impact Ver.)
+- **BXC-00-01** DranSword (Metal Coat: Gold)
+- **BXC-00-02** DranSword (Metal Coat: Silver)
+- **BXC-00-03** DranSword (Metal Coat: Bronze)
+- **BXG-01** DranzerSpiral
+- **BXG-03** HellsScythe (Metal Coat: Gold)
+- **BXG-04** DrigerSlash
+- **BXG-05** LeonClaw (Metal Coat: Gold)
+- **BXG-06** SharkEdge (Metal Coat: Blue)
+- **BXG-07** L-Drago (Upper Type)
+- **BXG-07** L-Drago (Continuity Type)
+- **BXG-08** HellsChain (Metal Coat: Black)
+- **BXG-09** CobaltDragoon (Metal Coat: Black)
+- **BXG-11** DracielShield
+- **BXG-12** StormPegasus
+- **BXG-12** RayGil
+- **BXG-12** VictoryValkyrie
+- **BXG-12** DranSword (Hologram Sticker Ver.)
+- **BXG-13** XyliphosSword
+- **BXG-15** DranzerSpiral Black Ver.
+- **BXG-18** DranBuster (Metal Coat: Blue) FC Barcelona Ver.
+- **BXG-19** HellsHammer (Metal Coat: Red) FC Barcelona Ver.
+- **BXG-20** RockLeone
+- **BXG-21** StormSpriggan
+- **BXG-22** StormPegasus
+- **BXG-23** CobaltDrake Transparent Ver.
+- **BXG-24** SkyPegasus Red Ver.
+- **BXG-25** DranSword (Metal Coat: White)
+- **BXG-25** DranDagger (Metal Coat: White)
+- **BXG-25** DranBuster (Metal Coat: White)
+- **BXG-32** MammothTusk (Metal Coat: Black)
+- **BXG-42** KnightMail (Metal Coat: Marine Blue)
+- **BXG-43** WizardArc R (Metal Coat: Black)
+- **BXG-45** PegasusBlast A (Metal Coat: Red)
+- **BXH-01** CobaltDrake (Metal Coat: Blue)
+- **BXH-02** KnightShield (Metal Coat: Gold)
+- **BXH-09** WizardRod (Metal Coat: Gold)
+- **BXH-10** SkyPegasus (Metal Coat: Dual Layer)
+- **BXH-14** MarsThunder S (Metal Coat: Gold)
+- **BXH-15** PerseusGloom B (Metal Coat: Gold)
+- **BXH-16** DranBrave S (Metal Coat: Gold)
+- **BXH-16** DranBrave S (Metal Coat: Silver)
+- **BXH-16** DranBrave S (Metal Coat: Bronze)
+- **CX-01** DranBrave S
+- **CX-02** WizardArc R
+- **CX-03** PerseusGloom B
+- **CX-04** DranBrave S Special Ver.
+- **CX-04** PerseusGloom B Special Ver.
+- **CX-05-01** HellsDeath T
+- **CX-05-02** RhinoDeath C
+- **CX-05-03** HellsArc T
+- **CX-05-04** LeonCrest
+- **CX-05-05** PhoenixRudder
+- **CX-05-06** WhaleWave
+- **CX-06-01** NineTails J
+- **CX-06-02** NineTails J
+- **CX-06-03** NineTails J
+- **CX-07** PegasusBlast A
+- **CX-08-01** CerberusBlaze W
+- **CX-08-02** WhaleBlaze M
+- **CX-08-03** CerberusGloom W
+- **CX-08-04** DranBuster
+- **CX-08-05** BlackShell
+- **CX-08-06** CobaltDragoon
+- **CX-09** SolFlare D
+- **CX-10** WolfHunt F
+- **CX-11-01** KaiserDomination H
+- **CX-11-02** GolemRock (Metal Coat: Green)
+- **CX-11-03** SharkGill
+- **CX-12** PhoenixFlare Z
+- **CX-13** L-DragoBlitz BK
+- **CX-14** KnightFortress GV
+- **CX-15** BeelzebubFury FE
+- **CX-17-01** UnicornTri PO
+- **CX-17-02** UnicornTri PO
+- **CX-17-03** SamuraiBlade
+- **CX-17-04** HellsHammer
+- **CX-17-05** TyrannoBeat
+- **CX-17-06** CrimsonGaruda
+- **UX-01** DranBuster
+- **UX-02** HellsHammer
+- **UX-03** WizardRod
+- **UX-04-01** DranBuster Special Ver.
+- **UX-04-02** WizardRod Special Ver.
+- **UX-05-01** ShinobiShadow
+- **UX-05-02** ShinobiShadow
+- **UX-05-03** ShinobiShadow
+- **UX-06** LeonCrest
+- **UX-07-01** PhoenixRudder (Metal Coat: Red)
+- **UX-07-02** WyvernGale
+- **UX-07-03** SphinxCowl
+- **UX-08** SilverWolf
+- **UX-09** SamuraiBlade
+- **UX-10-01** KnightMail
+- **UX-10-02** TyrannoBeat (Metal Coat: Red)
+- **UX-10-03** PteraSwing
+- **UX-10-04** HellsHammer (Metal Coat: Blue)
+- **UX-11** ImpactDrake
+- **UX-12-01** GhostHoop
+- **UX-12-02** GhostHoop
+- **UX-12-03** ShinobiShadow
+- **UX-12-04** LeonClaw
+- **UX-12-05** PhoenixWing
+- **UX-12-06** WyvernGale
+- **UX-13** GolemRock
+- **UX-14** ScorpioLance
+- **UX-15-01** SharkScale
+- **UX-15-02** TyrannoRoar
+- **UX-15-03** HellsBrave J
+- **UX-16-01** Horogeist
+- **UX-16-02** Horogeist
+- **UX-16-03** Horogeist
+- **UX-17** MeteoDragoon (Metal Coat: White)
+- **UX-18-01** MummyCurse
+- **UX-18-02** MummyCurse
+- **UX-18-03** PegasusTail M
+- **UX-18-04** SolBrave C
+- **UX-18-05** DranDagger
+- **UX-18-06** WeissTiger
+- **UX-19** BulletGriffin
