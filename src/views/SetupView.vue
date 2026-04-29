@@ -10,7 +10,6 @@ import type {
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useTournamentStore } from '@/stores/tournament'
-import { shortPlayerIdSuffix } from '@/utils/playerIdDisplay'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -34,9 +33,6 @@ const libraryEditingId = ref<string | null>(null)
 const libraryName = ref('')
 const libraryBey = ref('')
 const isLibraryCollapsedMobile = ref(false)
-const librarySelectedProfileIds = ref<string[]>([])
-const libraryComboPick = ref<Record<string, string>>({})
-const libraryCustomCombo = ref<Record<string, string>>({})
 const activeTab = ref<'rules' | 'players'>('rules')
 const playerNameInput = ref<HTMLInputElement | null>(null)
 const rosterPlayers = computed(() => (isNewSetup.value ? draftPlayers.value : store.players))
@@ -46,19 +42,6 @@ const canSave = computed(
 )
 const canAddPlayer = computed(() => playerName.value.trim().length > 0)
 const libraryOptions = computed(() => store.playerLibrary)
-const libraryDeployRows = computed(() => {
-  const set = new Set(librarySelectedProfileIds.value)
-  return libraryOptions.value
-    .filter((p) => set.has(libKey(p)) && !isInRoster(p.id))
-    .map((p) => {
-      const custom = libraryCustomCombo.value[p.id]?.trim() ?? ''
-      const pick = libraryComboPick.value[p.id]?.trim() ?? ''
-      const fallback = profileComboOptions(p)[0] ?? ''
-      const bey_name = custom || pick || fallback || undefined
-      return { profile: p, bey_name }
-    })
-})
-const canDeployLibrary = computed(() => libraryDeployRows.value.length > 0)
 
 onMounted(() => {
   if (isNewSetup.value) {
@@ -92,62 +75,8 @@ function libKey(p: { id: string }) {
   return p.id
 }
 
-function libraryComboText(p: Pick<PlayerProfile, 'default_bey_name' | 'bey_combos'>) {
-  const combos = profileComboOptions(p)
-  if (combos.length > 0) return combos.join(' / ')
-  return p.default_bey_name || t('setup.notAvailable')
-}
-
-function profileComboOptions(p: Pick<PlayerProfile, 'default_bey_name' | 'bey_combos'>): string[] {
-  const seen = new Set<string>()
-  const out: string[] = []
-  for (const raw of [...(p.bey_combos ?? []), p.default_bey_name]) {
-    const c = raw?.trim()
-    if (!c || seen.has(c)) continue
-    seen.add(c)
-    out.push(c)
-  }
-  return out
-}
-
 function isInRoster(profileId: string) {
   return rosterPlayers.value.some((p) => p.player_id === profileId)
-}
-
-function ensureDefaultComboPick(profileId: string, p: PlayerProfile) {
-  if (libraryComboPick.value[profileId]) return
-  const first = profileComboOptions(p)[0]
-  if (first) {
-    libraryComboPick.value = { ...libraryComboPick.value, [profileId]: first }
-  }
-}
-
-function toggleLibraryProfile(profileId: string, p: PlayerProfile, checked: boolean) {
-  if (isInRoster(profileId)) return
-  if (checked) {
-    if (!librarySelectedProfileIds.value.includes(profileId)) {
-      librarySelectedProfileIds.value = [...librarySelectedProfileIds.value, profileId]
-    }
-    ensureDefaultComboPick(profileId, p)
-    return
-  }
-  const next = librarySelectedProfileIds.value.filter((id) => id !== profileId)
-  librarySelectedProfileIds.value = next
-  const { [profileId]: _dropPick, ...restPick } = libraryComboPick.value
-  const { [profileId]: _dropCustom, ...restCustom } = libraryCustomCombo.value
-  libraryComboPick.value = restPick
-  libraryCustomCombo.value = restCustom
-}
-
-function setLibraryComboPick(profileId: string, combo: string) {
-  libraryComboPick.value = { ...libraryComboPick.value, [profileId]: combo }
-}
-
-function isComboSelected(profileId: string, combo: string) {
-  const custom = libraryCustomCombo.value[profileId]?.trim()
-  if (custom) return false
-  const pick = libraryComboPick.value[profileId]?.trim()
-  return pick === combo
 }
 
 function resetPlayerForm() {
@@ -203,32 +132,6 @@ function removePlayer(id: string) {
   if (editingId.value === id) resetPlayerForm()
 }
 
-function addSelectedFromLibrary() {
-  if (!canDeployLibrary.value) return
-  if (isNewSetup.value) {
-    const today = new Date().toISOString().slice(0, 10)
-    const next = [...draftPlayers.value]
-    for (const row of libraryDeployRows.value) {
-      next.push({
-        id: `tp-${crypto.randomUUID().slice(0, 8)}`,
-        player_id: row.profile.id,
-        name: row.profile.name,
-        bey_name: row.bey_name,
-        created_at: row.profile.created_at ?? today,
-      })
-    }
-    draftPlayers.value = next
-    librarySelectedProfileIds.value = []
-    libraryComboPick.value = {}
-    libraryCustomCombo.value = {}
-    return
-  }
-  store.addPlayersFromLibrary(libraryDeployRows.value)
-  librarySelectedProfileIds.value = []
-  libraryComboPick.value = {}
-  libraryCustomCombo.value = {}
-}
-
 function startEditLibraryPlayer(id: string) {
   const profile = store.profileById(id)
   if (!profile) return
@@ -256,11 +159,6 @@ function saveLibraryPlayer() {
 function removeLibraryPlayer(id: string) {
   if (!confirm(t('players.deleteLibraryConfirm'))) return
   store.deletePlayerProfile(id)
-  librarySelectedProfileIds.value = librarySelectedProfileIds.value.filter((k) => k !== id)
-  const { [id]: _p, ...restPick } = libraryComboPick.value
-  const { [id]: _c, ...restCustom } = libraryCustomCombo.value
-  libraryComboPick.value = restPick
-  libraryCustomCombo.value = restCustom
   if (libraryEditingId.value === id) cancelEditLibraryPlayer()
 }
 

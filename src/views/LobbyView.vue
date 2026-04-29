@@ -3,7 +3,6 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useTournamentStore } from '@/stores/tournament'
-import type { FinishAction } from '@/types/bxtm'
 import { computePlayerStats, winRate } from '@/utils/playerStats'
 import { shortPlayerIdSuffix } from '@/utils/playerIdDisplay'
 
@@ -89,16 +88,6 @@ function syncDistinctPlayers(changed: 'p1' | 'p2') {
     return
   }
   p1.value = pickRandomPlayer(p2.value || undefined)
-}
-
-function lastActionLabel(action: FinishAction) {
-  const keyMap: Record<FinishAction, string> = {
-    'Over Finish': 'match.of',
-    'Burst Finish': 'match.bf',
-    'Xtreme Finish': 'match.xf',
-    'Spin Finish': 'match.sf',
-  }
-  return t(keyMap[action])
 }
 
 function start() {
