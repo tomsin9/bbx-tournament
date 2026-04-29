@@ -495,15 +495,6 @@ const pct = (pid: string) => {
           :key="m.match_id"
           class="group rounded-4xl border border-slate-700 bg-slate-900/45 p-4 ring-1 ring-white/8 transition-all hover:border-bx-primary/35 hover:shadow-[0_10px_26px_rgba(0,0,0,0.22)] sm:p-5"
         >
-          <div class="mb-3 flex items-center justify-between gap-3">
-            <span class="rounded-full border border-slate-700 bg-slate-900/80 px-2.5 py-1 text-[10px] font-medium text-slate-400">
-              {{ m.logs.length }} {{ t('history.matchDetails') }}
-            </span>
-            <p v-if="m.logs.length" class="hidden text-xs text-slate-400 sm:block">
-              {{ t('lobby.lastAction') }}: {{ lastActionLabel(m.logs[m.logs.length - 1]!.action) }}
-            </p>
-          </div>
-
           <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div class="grid w-full grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-5">
               <div class="rounded-2xl border border-red-500/25 bg-red-500/10 px-3 py-3 text-center sm:px-4">

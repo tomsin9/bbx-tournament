@@ -33,6 +33,7 @@ const editingId = ref<string | null>(null)
 const libraryEditingId = ref<string | null>(null)
 const libraryName = ref('')
 const libraryBey = ref('')
+const isLibraryCollapsedMobile = ref(false)
 const librarySelectedProfileIds = ref<string[]>([])
 const libraryComboPick = ref<Record<string, string>>({})
 const libraryCustomCombo = ref<Record<string, string>>({})
@@ -291,6 +292,31 @@ function save() {
   store.buildInitialScheduledMatches()
   void router.push('/lobby')
 }
+
+function quickAddFromLibrary(profile: PlayerProfile) {
+  if (isInRoster(profile.id)) return
+
+  const defaultBey =
+    (profile.default_bey_name ?? profile.bey_combos?.[0])?.trim() || undefined
+
+  if (isNewSetup.value) {
+    const today = new Date().toISOString().slice(0, 10)
+    draftPlayers.value = [
+      ...draftPlayers.value,
+      {
+        id: `tp-${crypto.randomUUID().slice(0, 8)}`,
+        player_id: profile.id,
+        name: profile.name,
+        bey_name: defaultBey,
+        created_at: profile.created_at ?? today,
+      },
+    ]
+    return
+  }
+
+  store.addPlayersFromLibrary([{ profile, bey_name: defaultBey }])
+}
+
 </script>
 
 <template>
@@ -463,7 +489,7 @@ function save() {
       </div>
     </section>
 
-    <section v-else class="space-y-10">
+    <!-- <section v-else class="space-y-10">
       <section class="group relative">
         <div class="absolute -inset-0.5 rounded-4xl bg-linear-to-r from-bx-primary/30 to-bx-accent/30 blur-sm opacity-50"></div>
 
@@ -725,6 +751,160 @@ function save() {
           {{ t('setup.importSelectedWarriors', { n: libraryDeployRows.length }) }}
         </button>
       </section>
+    </section> -->
+
+    <section v-else class="space-y-8 pb-10">
+    
+      <section class="relative group">
+        <div class="absolute -inset-0.5 rounded-3xl bg-linear-to-r from-bx-primary/40 to-bx-accent/40 blur opacity-30"></div>
+        <div class="relative rounded-3xl bg-slate-950 p-5 ring-1 ring-white/10" :class="{ 'ring-bx-primary/50 bg-bx-primary/5': editingId }">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
+            <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div class="space-y-1.5">
+                <label class="px-1 text-[10px] font-black uppercase tracking-widest text-slate-500 italic">{{ t('setup.playerName') }}</label>
+                <input ref="playerNameInput" v-model="playerName" type="text" class="w-full rounded-xl border-2 border-slate-800 bg-slate-900 px-4 py-2.5 text-white focus:border-bx-primary outline-none transition-all" :placeholder="t('setup.playerName')" @keyup.enter="submitPlayer" />
+              </div>
+              <div class="space-y-1.5">
+                <label class="px-1 text-[10px] font-black uppercase tracking-widest text-slate-500 italic">{{ t('setup.playerBey') }}</label>
+                <input v-model="playerBey" type="text" class="w-full rounded-xl border-2 border-slate-800 bg-slate-900 px-4 py-2.5 text-white focus:border-bx-primary outline-none" :placeholder="t('setup.playerBey')" @keyup.enter="submitPlayer" />
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <button @click="submitPlayer" :disabled="!canAddPlayer" class="px-8 py-3 rounded-xl bg-bx-primary text-black font-black uppercase italic text-xs tracking-widest hover:brightness-110 active:scale-95 disabled:opacity-20 transition-all">
+                {{ editingId ? t('setup.updatePlayer') : t('setup.addToRoster') }}
+              </button>
+              <button v-if="editingId" @click="resetPlayerForm" class="px-4 py-3 rounded-xl bg-slate-800 text-slate-400">✕</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        
+        <section class="lg:col-span-5 space-y-4">
+          <div class="flex min-h-6 items-center justify-between px-2">
+            <h3 class="leading-none text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">{{ t('setup.playerLibraryTitle') }}</h3>
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-slate-900 text-[10px] font-bold text-slate-600">{{ t('players.availableCount', { n: libraryOptions.length }) }}</span>
+              <button
+                type="button"
+                class="lg:hidden p-1.5 rounded-lg border border-slate-800 text-slate-400 hover:text-bx-primary hover:border-bx-primary/40 transition-colors"
+                :aria-label="isLibraryCollapsedMobile ? t('common.expand') : t('common.collapse')"
+                @click="isLibraryCollapsedMobile = !isLibraryCollapsedMobile"
+              >
+                <svg class="w-4 h-4 transition-transform" :class="isLibraryCollapsedMobile ? '' : 'rotate-180'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="h-[500px] rounded-2xl border border-slate-800 bg-slate-950/30 p-2" :class="isLibraryCollapsedMobile ? 'hidden lg:block' : 'block'">
+            <div class="h-full space-y-2 overflow-y-scroll custom-scrollbar pr-1">
+              <div v-if="libraryEditingId" class="space-y-3 rounded-2xl border border-bx-primary/30 bg-bx-primary/5 p-3">
+                <p class="text-[10px] font-black uppercase tracking-[0.2em] text-bx-primary">
+                  {{ t('players.editLibraryPlayer') }}
+                </p>
+                <div class="space-y-2">
+                  <input
+                    v-model="libraryName"
+                    type="text"
+                    class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-bx-primary focus:outline-none"
+                    :placeholder="t('setup.playerName')"
+                  />
+                  <input
+                    v-model="libraryBey"
+                    type="text"
+                    class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:border-bx-primary focus:outline-none"
+                    :placeholder="t('setup.playerBey')"
+                  />
+                </div>
+                <div class="flex gap-2">
+                  <button
+                    type="button"
+                    class="flex-1 rounded-xl bg-bx-primary py-2 text-[10px] font-black uppercase tracking-widest text-black disabled:opacity-30"
+                    :disabled="!libraryName.trim()"
+                    @click="saveLibraryPlayer"
+                  >
+                    {{ t('players.saveLibraryPlayer') }}
+                  </button>
+                  <button
+                    type="button"
+                    class="rounded-xl border border-slate-700 px-3 py-2 text-[10px] font-bold uppercase tracking-wide text-slate-300 hover:bg-slate-900"
+                    @click="cancelEditLibraryPlayer"
+                  >
+                    {{ t('common.cancel') }}
+                  </button>
+                </div>
+              </div>
+
+              <div v-for="p in libraryOptions" :key="libKey(p)" 
+                class="group relative flex items-center justify-between p-3 rounded-2xl border border-white/5 bg-slate-900/30 transition-all hover:border-bx-primary/40 hover:bg-bx-primary/5"
+                :class="{ 'opacity-40 grayscale pointer-events-none': isInRoster(p.id) }"
+              >
+                <button type="button" class="min-w-0 flex-1 text-left" @click="quickAddFromLibrary(p)">
+                  <p class="truncate font-black italic uppercase text-white">{{ p.name }}</p>
+                  <p class="truncate text-[10px] font-bold text-slate-500 uppercase">{{ p.default_bey_name || t('players.stockBey') }}</p>
+                </button>
+                
+                <div class="flex items-center gap-1">
+                  <button @click="startEditLibraryPlayer(p.id)" class="opacity-0 group-hover:opacity-100 p-2 text-slate-600 hover:text-white transition-all">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg>
+                  </button>
+                  <button @click="removeLibraryPlayer(p.id)" class="opacity-0 group-hover:opacity-100 p-2 text-slate-700 hover:text-red-500 transition-all">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  </button>
+                  <button v-if="!isInRoster(p.id)" @click="quickAddFromLibrary(p)" class="p-2 rounded-lg bg-slate-800 text-bx-primary hover:bg-bx-primary hover:text-black transition-colors">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" /></svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="lg:col-span-7 space-y-4">
+          <div class="flex min-h-6 items-center justify-between px-2">
+            <h3 class="leading-none text-[10px] font-black uppercase tracking-[0.3em] text-bx-primary">
+              {{ t('setup.currentRoster') }} ({{ rosterPlayers.length }})
+            </h3>
+            <span class="invisible px-2 py-0.5 rounded text-[10px] font-bold">{{ t('players.availableCount', { n: 0 }) }}</span>
+          </div>
+
+          <div class="h-[500px]">
+            <div v-if="rosterPlayers.length === 0" class="flex h-full items-center justify-center rounded-3xl border-2 border-dashed border-slate-800 text-center">
+              <div>
+                <p class="font-bold italic uppercase tracking-widest text-slate-700">{{ t('setup.readyToBattle') }}</p>
+                <p class="mt-2 text-xs text-slate-700">{{ t('setup.emptyPlayersHint') }}</p>
+              </div>
+            </div>
+
+            <transition-group v-else name="list" tag="ul" class="grid h-full gap-2 overflow-y-scroll custom-scrollbar pr-1">
+              <li v-for="p in rosterPlayers" :key="p.id" class="flex items-center justify-between rounded-2xl bg-slate-900 border border-white/5 p-4 transition-all">
+                <div class="flex items-center gap-4">
+                  <div class="w-10 h-10 flex items-center justify-center rounded-xl bg-bx-primary/10 border border-bx-primary/20 text-bx-primary font-black italic">
+                    {{ p.name.charAt(0).toUpperCase() }}
+                  </div>
+                  <div>
+                    <p class="font-black italic uppercase text-white leading-none">{{ p.name }}</p>
+                    <p class="text-[10px] font-bold text-bx-accent mt-1 tracking-wider uppercase">{{ p.bey_name || t('players.stockBey') }}</p>
+                  </div>
+                </div>
+
+                <div class="flex gap-2">
+                  <button @click="editPlayer(p)" class="p-2 text-slate-500 hover:text-white transition-colors">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2.828 2.828 0 114 4L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                  </button>
+                  <button @click="removePlayer(p.id)" class="p-2 text-slate-700 hover:text-red-500 transition-colors">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  </button>
+                </div>
+              </li>
+            </transition-group>
+          </div>
+        </section>
+
+      </div>
     </section>
 
     <div
@@ -756,6 +936,30 @@ function save() {
 </template>
 
 <style scoped>
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(166, 255, 0, 0.58) rgba(15, 23, 42, 0.55);
+  scrollbar-gutter: stable;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  border-radius: 9999px;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: rgba(166, 255, 0, 0.58);
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(166, 255, 0, 0.88);
+}
+
 .list-enter-active,
 .list-leave-active {
   transition: all 0.3s ease;

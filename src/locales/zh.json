@@ -8,7 +8,7 @@
     "dataToolsTitle": "資料工具",
     "versionLabel": "版本",
     "publishDateLabel": "發佈日期",
-    "publishDateValue": "2026-04-22",
+    "publishDateValue": "2026-04-29",
     "license": "MIT 授權"
   },
   "nav": {
@@ -78,6 +78,7 @@
     "playerLibraryTitle": "歷史選手庫",
     "playerLibraryHelp": "可重用其他賽事出現過的選手。",
     "currentRoster": "目前名單",
+    "readyToBattle": "準備開戰？",
     "emptyPlayersHint": "尚無選手，請從上方新增或由資料庫導入",
     "noBeyRecorded": "未記錄陀螺",
     "notAvailable": "未提供",
@@ -206,7 +207,9 @@
     "replaceDataTitle": "覆寫本機資料？",
     "replaceDataBody": "匯入將取代此瀏覽器內本 App 儲存的所有資料。",
     "importFailed": "匯入失敗",
-    "language": "語言"
+    "language": "語言",
+    "expand": "展開",
+    "collapse": "摺疊"
   },
   "errors": {
     "same_player": "請選擇兩位不同選手。"

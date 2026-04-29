@@ -8,7 +8,7 @@
     "dataToolsTitle": "Data tools",
     "versionLabel": "Version",
     "publishDateLabel": "Publish date",
-    "publishDateValue": "2026-04-22",
+    "publishDateValue": "2026-04-29",
     "license": "MIT License"
   },
   "nav": {
@@ -78,6 +78,7 @@
     "playerLibraryTitle": "Player library",
     "playerLibraryHelp": "Reuse players found in other tournaments.",
     "currentRoster": "Current roster",
+    "readyToBattle": "Ready to battle?",
     "emptyPlayersHint": "No players yet. Add from the form above or import from library.",
     "noBeyRecorded": "No Bey recorded",
     "notAvailable": "N/A",
@@ -181,7 +182,7 @@
     "stockBey": "No Bey specified",
     "availableCount": "{n} Available",
     "editLibraryPlayer": "Edit Library Player",
-    "saveLibraryPlayer": "Save Library Player",
+    "saveLibraryPlayer": "Save Player",
     "deploySelectedPlayers": "Deploy {n} Selected Players",
     "deleteLibraryConfirm": "Delete this library player from all tournaments?",
     "shortId": "#{id}",
@@ -191,7 +192,7 @@
     "libraryCustomCombo": "Custom combo (optional)",
     "libraryCustomComboHint": "If filled, this overrides the chip selection for import.",
     "libraryKnownCombos": "Known combos",
-    "libraryComboEditor": "Saved combos (one per line)",
+    "libraryComboEditor": "Combos (one per line)",
     "libraryComboEditorHint": "Type one combo per line. Empty lines are ignored."
   },
   "common": {
@@ -206,7 +207,9 @@
     "replaceDataTitle": "Replace local data?",
     "replaceDataBody": "Importing will replace all data stored in this browser for this app.",
     "importFailed": "Import failed",
-    "language": "Language"
+    "language": "Language",
+    "expand": "Expand",
+    "collapse": "Collapse"
   },
   "errors": {
     "same_player": "Choose two different players."
