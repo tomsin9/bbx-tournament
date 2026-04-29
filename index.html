@@ -4,9 +4,57 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BBX Tournament</title>
+    <meta name="robots" content="index, follow" />
+    <meta name="theme-color" content="#0f172a" />
+    <meta id="meta-description" name="description" content="Local-first Beyblade X tournament manager, live scoring, player library, and match history." />
+    <meta name="keywords" content="Beyblade X, BBX, tournament manager, round robin, single elimination, score tracker" />
+    <link rel="canonical" href="https://bbxbattle.win/" />
+
+    <meta id="og-title" property="og:title" content="BBX Tournament System" />
+    <meta id="og-description" property="og:description" content="Manage Beyblade X tournaments with live scoring, player registry, history, and JSON import/export." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://bbxbattle.win/" />
+    <meta property="og:site_name" content="BBX Tournament System" />
+    <meta id="og-locale" property="og:locale" content="en_US" />
+    <meta property="og:image" content="https://bbxbattle.win/beybladex-logo.png" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta id="twitter-title" name="twitter:title" content="BBX Tournament System" />
+    <meta id="twitter-description" name="twitter:description" content="Manage Beyblade X tournaments with live scoring, player registry, history, and JSON import/export." />
+    <meta name="twitter:image" content="https://bbxbattle.win/beybladex-logo.png" />
+
+    <title>BBX Tournament System - bbxbattle.win</title>
     <script>
       (function () {
+        const savedLocale = localStorage.getItem('bxtm_locale')
+        const isZh =
+          savedLocale === 'zh' ||
+          (!savedLocale && navigator.language.toLowerCase().startsWith('zh'))
+        const localeCopy = {
+          zh: {
+            title: 'BBX 比賽系統 | 爆旋陀螺 X 賽事管理與即時計分',
+            description: '本機優先的爆旋陀螺 X 賽事管理工具、即時計分、選手庫與歷史紀錄。',
+            socialDescription: '管理 Beyblade X 賽事，即時計分、選手管理、歷史紀錄、JSON 匯入匯出。',
+          },
+          en: {
+            title: 'BBX Tournament System | Beyblade X Live Scoring',
+            description: 'Local-first Beyblade X tournament manager, live scoring, player library, and match history.',
+            socialDescription: 'Manage Beyblade X tournaments with live scoring, player registry, history, and JSON import/export.',
+          },
+        }
+        const { title, description, socialDescription } = isZh
+          ? localeCopy.zh
+          : localeCopy.en
+
+        document.documentElement.lang = isZh ? 'zh' : 'en'
+        document.title = title
+        document.getElementById('meta-description')?.setAttribute('content', description)
+        document.getElementById('og-title')?.setAttribute('content', title)
+        document.getElementById('og-description')?.setAttribute('content', socialDescription)
+        document.getElementById('og-locale')?.setAttribute('content', isZh ? 'zh_HK' : 'en_US')
+        document.getElementById('twitter-title')?.setAttribute('content', title)
+        document.getElementById('twitter-description')?.setAttribute('content', socialDescription)
+
         const redirect = sessionStorage.getItem('redirect')
         if (!redirect) return
         sessionStorage.removeItem('redirect')
