@@ -34,7 +34,16 @@ const isDrawing = ref(false)
 const drawRevealPair = ref<[string, string] | null>(null)
 
 const stats = computed(() => computePlayerStats(store.players, store.matches))
-const currentRound = computed(() => store.matches.length + 1)
+const currentRound = computed(() => {
+  const next = nextScheduled.value
+  if (!next) return null
+  const nextIdx = store.matches.findIndex((m) => m.match_id === next.match_id)
+  if (nextIdx <= 0) return 1
+  const completedBefore = store.matches
+    .slice(0, nextIdx)
+    .filter((m) => m.status === 'completed').length
+  return completedBefore + 1
+})
 const rankedPlayers = computed(() =>
   [...store.players].sort((a, b) => {
     const sa = stats.value.get(a.id)
@@ -174,7 +183,12 @@ const pct = (pid: string) => {
         </h1>
         <p v-if="!store.hasPlayers" class="text-bx-primary/90">{{ t('lobby.noPlayers') }}</p>
         <p v-else class="text-sm text-slate-500">
-          {{ store.tournamentName || t('home.unnamedBattle') }} — {{ t('lobby.roundPreparing', { n: currentRound }) }}
+          {{ store.tournamentName || t('home.unnamedBattle') }} —
+          {{
+            currentRound
+              ? t('lobby.roundPreparing', { n: currentRound })
+              : t('lobby.noScheduledRemaining')
+          }}
         </p>
       </div>
 

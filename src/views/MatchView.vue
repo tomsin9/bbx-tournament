@@ -242,7 +242,7 @@ watch(
 </script>
 
 <template>
-  <div v-if="activeMatch && activeP1 && activeP2" class="h-dvh flex flex-col overflow-hidden bg-slate-950 text-white">
+  <div v-if="activeMatch && activeP1 && activeP2" class="match-view flex flex-col overflow-x-hidden overflow-y-auto bg-slate-950 text-white">
     
     <header class="shrink-0 flex items-center justify-between px-4 py-2 sm:px-6">
       <button @click="back" class="p-2 -ml-2 text-slate-500 hover:text-white transition-colors">
@@ -397,6 +397,14 @@ watch(
 </template>
 
 <style scoped>
+.match-view {
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  -webkit-overflow-scrolling: touch;
+}
+
 .winner-enter-active,
 .winner-leave-active {
   transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
