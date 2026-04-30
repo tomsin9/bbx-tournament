@@ -18,6 +18,7 @@ import {
   normalizeImportedState,
   serializeCollection,
 } from '@/utils/exportImport'
+import { canonicalizeBeyValue } from '@/utils/bladeResolver'
 import { applyScore as applyScorePure, undoLast as undoLastPure } from '@/utils/matchLogic'
 import { loadFromLocalStorage, saveToLocalStorage } from '@/utils/storage'
 
@@ -30,9 +31,10 @@ function normalizeBeys(values: Array<string | undefined>): string[] {
   const result: string[] = []
   for (const raw of values) {
     const bey = raw?.trim()
-    if (!bey || seen.has(bey)) continue
-    seen.add(bey)
-    result.push(bey)
+    const canonical = bey ? canonicalizeBeyValue(bey) : ''
+    if (!canonical || seen.has(canonical)) continue
+    seen.add(canonical)
+    result.push(canonical)
   }
   return result
 }
@@ -40,6 +42,20 @@ function normalizeBeys(values: Array<string | undefined>): string[] {
 function normalizeComboInput(input?: string): string[] {
   if (!input) return []
   return normalizeBeys(input.split(',').map((part) => part.trim()))
+}
+
+function participantBeyFields(p: TournamentParticipant | undefined) {
+  if (!p) {
+    return { bey_name: undefined as string | undefined, beys: undefined as string[] | undefined }
+  }
+  const beys =
+    p.beys && p.beys.length > 0
+      ? normalizeBeys(p.beys)
+      : normalizeComboInput(p.bey_name)
+  if (beys.length === 0) {
+    return { bey_name: undefined, beys: undefined }
+  }
+  return { bey_name: beys[0], beys }
 }
 
 function comboLabel(combo: Combo): string {
@@ -120,6 +136,11 @@ function completedWinnerId(match: Match): string | null {
   return null
 }
 
+function isQuickMatchRecord(match: Match): boolean {
+  if (match.is_quick_match === true) return true
+  return (match.tournament_name ?? '').trim() === 'Quick Match'
+}
+
 export const useTournamentStore = defineStore('tournament', () => {
   const tournaments = ref<TournamentRecord[]>([])
   const activeTournamentId = ref<string | null>(null)
@@ -189,16 +210,18 @@ export const useTournamentStore = defineStore('tournament', () => {
   )
 
   const players = computed(() => state.value.participants)
-  const matches = computed(() => state.value.matches)
+  const matches = computed(() => state.value.matches.filter((m) => !isQuickMatchRecord(m)))
   const tournamentList = computed(() =>
     tournaments.value.map((t) => ({
       isCompleted:
-        t.state.matches.length > 0 &&
-        t.state.matches.every((m) => m.status === 'completed'),
+        t.state.matches.filter((m) => !isQuickMatchRecord(m)).length > 0 &&
+        t.state.matches
+          .filter((m) => !isQuickMatchRecord(m))
+          .every((m) => m.status === 'completed'),
       id: t.id,
       name: t.state.tournament_name || 'Untitled',
       players: t.state.participants.length,
-      matches: t.state.matches.length,
+      matches: t.state.matches.filter((m) => !isQuickMatchRecord(m)).length,
       updatedAt: t.updated_at,
       isActive: t.id === activeTournamentId.value,
     })),
@@ -262,10 +285,12 @@ export const useTournamentStore = defineStore('tournament', () => {
     return map
   })
   const liveMatches = computed(() =>
-    state.value.matches.filter((m) => m.status === 'pending' || m.status === 'in_progress'),
+    state.value.matches.filter(
+      (m) => !isQuickMatchRecord(m) && (m.status === 'pending' || m.status === 'in_progress'),
+    ),
   )
   const finishedMatches = computed(() =>
-    state.value.matches.filter((m) => m.status === 'completed'),
+    state.value.matches.filter((m) => !isQuickMatchRecord(m) && m.status === 'completed'),
   )
   const allFinishedMatches = computed(() => {
     return tournaments.value.flatMap((t) => {
@@ -281,8 +306,6 @@ export const useTournamentStore = defineStore('tournament', () => {
           tournament_name: m.tournament_name?.trim() || tournamentName,
           p1_name: participantNameById.get(m.p1_participant_id) ?? m.p1_participant_id,
           p2_name: participantNameById.get(m.p2_participant_id) ?? m.p2_participant_id,
-          p1_bey_name: m.p1_bey_name,
-          p2_bey_name: m.p2_bey_name,
         }))
     })
   })
@@ -346,12 +369,16 @@ export const useTournamentStore = defineStore('tournament', () => {
       const created = pairs.map((pair) => {
         const p1 = state.value.participants.find((p) => p.id === pair[0])
         const p2 = state.value.participants.find((p) => p.id === pair[1])
+        const b1 = participantBeyFields(p1)
+        const b2 = participantBeyFields(p2)
         return {
           match_id: newId('m'),
           p1_participant_id: pair[0],
           p2_participant_id: pair[1],
-          p1_bey_name: p1?.bey_name?.trim() || undefined,
-          p2_bey_name: p2?.bey_name?.trim() || undefined,
+          p1_bey_name: b1.bey_name,
+          p2_bey_name: b2.bey_name,
+          p1_beys: b1.beys,
+          p2_beys: b2.beys,
           p1_score: 0,
           p2_score: 0,
           logs: [],
@@ -395,12 +422,16 @@ export const useTournamentStore = defineStore('tournament', () => {
       const p2Id = shuffled[i + 1]!
       const p1 = state.value.participants.find((p) => p.id === p1Id)
       const p2 = state.value.participants.find((p) => p.id === p2Id)
+      const b1 = participantBeyFields(p1)
+      const b2 = participantBeyFields(p2)
       toCreate.push({
         match_id: newId('m'),
         p1_participant_id: p1Id,
         p2_participant_id: p2Id,
-        p1_bey_name: p1?.bey_name?.trim() || undefined,
-        p2_bey_name: p2?.bey_name?.trim() || undefined,
+        p1_bey_name: b1.bey_name,
+        p2_bey_name: b2.bey_name,
+        p1_beys: b1.beys,
+        p2_beys: b2.beys,
         p1_score: 0,
         p2_score: 0,
         logs: [],
@@ -428,12 +459,16 @@ export const useTournamentStore = defineStore('tournament', () => {
       const p2Id = shuffled[i + 1]!
       const p1 = state.value.participants.find((p) => p.id === p1Id)
       const p2 = state.value.participants.find((p) => p.id === p2Id)
+      const b1 = participantBeyFields(p1)
+      const b2 = participantBeyFields(p2)
       toCreate.push({
         match_id: newId('m'),
         p1_participant_id: p1Id,
         p2_participant_id: p2Id,
-        p1_bey_name: p1?.bey_name?.trim() || undefined,
-        p2_bey_name: p2?.bey_name?.trim() || undefined,
+        p1_bey_name: b1.bey_name,
+        p2_bey_name: b2.bey_name,
+        p1_beys: b1.beys,
+        p2_beys: b2.beys,
         p1_score: 0,
         p2_score: 0,
         logs: [],
@@ -459,12 +494,16 @@ export const useTournamentStore = defineStore('tournament', () => {
       const p1 = state.value.participants.find((p) => p.id === p1Id)
       const p2 = state.value.participants.find((p) => p.id === p2Id)
       if (!p1 || !p2 || p1Id === p2Id) continue
+      const b1 = participantBeyFields(p1)
+      const b2 = participantBeyFields(p2)
       toCreate.push({
         match_id: newId('m'),
         p1_participant_id: p1Id,
         p2_participant_id: p2Id,
-        p1_bey_name: p1.bey_name?.trim() || undefined,
-        p2_bey_name: p2.bey_name?.trim() || undefined,
+        p1_bey_name: b1.bey_name,
+        p2_bey_name: b2.bey_name,
+        p1_beys: b1.beys,
+        p2_beys: b2.beys,
         p1_score: 0,
         p2_score: 0,
         logs: [],
@@ -542,12 +581,16 @@ export const useTournamentStore = defineStore('tournament', () => {
     const semis: Match[] = semiPairs.map(([p1Id, p2Id]) => {
       const p1 = state.value.participants.find((p) => p.id === p1Id)
       const p2 = state.value.participants.find((p) => p.id === p2Id)
+      const b1 = participantBeyFields(p1)
+      const b2 = participantBeyFields(p2)
       return {
         match_id: newId('m'),
         p1_participant_id: p1Id,
         p2_participant_id: p2Id,
-        p1_bey_name: p1?.bey_name?.trim() || undefined,
-        p2_bey_name: p2?.bey_name?.trim() || undefined,
+        p1_bey_name: b1.bey_name,
+        p2_bey_name: b2.bey_name,
+        p1_beys: b1.beys,
+        p2_beys: b2.beys,
         p1_score: 0,
         p2_score: 0,
         logs: [],
@@ -577,12 +620,16 @@ export const useTournamentStore = defineStore('tournament', () => {
     if (!hasFinal) {
       const p1 = state.value.participants.find((p) => p.id === winners[0])
       const p2 = state.value.participants.find((p) => p.id === winners[1])
+      const fb1 = participantBeyFields(p1)
+      const fb2 = participantBeyFields(p2)
       toCreate.push({
         match_id: newId('m'),
         p1_participant_id: winners[0]!,
         p2_participant_id: winners[1]!,
-        p1_bey_name: p1?.bey_name?.trim() || undefined,
-        p2_bey_name: p2?.bey_name?.trim() || undefined,
+        p1_bey_name: fb1.bey_name,
+        p2_bey_name: fb2.bey_name,
+        p1_beys: fb1.beys,
+        p2_beys: fb2.beys,
         p1_score: 0,
         p2_score: 0,
         logs: [],
@@ -596,12 +643,16 @@ export const useTournamentStore = defineStore('tournament', () => {
     if (state.value.playoff_third_place && !hasThird) {
       const p1 = state.value.participants.find((p) => p.id === losers[0])
       const p2 = state.value.participants.find((p) => p.id === losers[1])
+      const tb1 = participantBeyFields(p1)
+      const tb2 = participantBeyFields(p2)
       toCreate.push({
         match_id: newId('m'),
         p1_participant_id: losers[0]!,
         p2_participant_id: losers[1]!,
-        p1_bey_name: p1?.bey_name?.trim() || undefined,
-        p2_bey_name: p2?.bey_name?.trim() || undefined,
+        p1_bey_name: tb1.bey_name,
+        p2_bey_name: tb2.bey_name,
+        p1_beys: tb1.beys,
+        p2_beys: tb2.beys,
         p1_score: 0,
         p2_score: 0,
         logs: [],
@@ -723,22 +774,23 @@ export const useTournamentStore = defineStore('tournament', () => {
   }
 
   function addPlayersFromLibrary(
-    playersToAdd: Array<{ profile: PlayerProfile; bey_name?: string }>,
+    playersToAdd: Array<{ profile: PlayerProfile; bey_name?: string; beys?: string[] }>,
   ) {
     const today = new Date().toISOString().slice(0, 10)
     for (const row of playersToAdd) {
       const p = row.profile
       const name = p.name.trim()
       if (!name) continue
-      const chosen =
-        row.bey_name !== undefined
-          ? row.bey_name.trim() || undefined
-          : firstBeyFromProfile(p)?.trim() || undefined
+      const chosenBeys = normalizeBeys([
+        ...(row.beys ?? []),
+        ...(row.bey_name ? [row.bey_name] : []),
+      ])
+      const chosen = chosenBeys[0] ?? (firstBeyFromProfile(p)?.trim() || undefined)
 
       const catalogIdx = playerCatalog.value.findIndex((c) => c.id === p.id)
       if (catalogIdx >= 0) {
         const current = playerCatalog.value[catalogIdx]!
-        const combos = upsertProfileCombo(current, normalizeBeys([chosen]))
+        const combos = upsertProfileCombo(current, chosenBeys.length > 0 ? chosenBeys : normalizeBeys([chosen]))
         const nextCatalog = [...playerCatalog.value]
         nextCatalog[catalogIdx] = {
           ...current,
@@ -757,10 +809,11 @@ export const useTournamentStore = defineStore('tournament', () => {
         const p = row.profile
         const name = p.name.trim()
         if (!name) continue
-        const bey_name =
-          row.bey_name !== undefined
-            ? row.bey_name.trim() || undefined
-            : firstBeyFromProfile(p)?.trim() || undefined
+        const chosenBeys = normalizeBeys([
+          ...(row.beys ?? []),
+          ...(row.bey_name ? [row.bey_name] : []),
+        ])
+        const bey_name = chosenBeys[0] ?? (firstBeyFromProfile(p)?.trim() || undefined)
         if (existing.has(p.id)) continue
         existing.add(p.id)
         next.push({
@@ -768,7 +821,7 @@ export const useTournamentStore = defineStore('tournament', () => {
           player_id: p.id,
           name,
           bey_name,
-          beys: bey_name ? [bey_name] : undefined,
+          beys: chosenBeys.length ? chosenBeys : bey_name ? [bey_name] : undefined,
           created_at: p.created_at ?? today,
         })
       }
@@ -902,12 +955,16 @@ export const useTournamentStore = defineStore('tournament', () => {
     if (p1_id === p2_id) throw new Error('same_player')
     const p1 = state.value.participants.find((p) => p.id === p1_id)
     const p2 = state.value.participants.find((p) => p.id === p2_id)
+    const b1 = participantBeyFields(p1)
+    const b2 = participantBeyFields(p2)
     const match: Match = {
       match_id: newId('m'),
       p1_participant_id: p1_id,
       p2_participant_id: p2_id,
-      p1_bey_name: p1?.bey_name?.trim() || undefined,
-      p2_bey_name: p2?.bey_name?.trim() || undefined,
+      p1_bey_name: b1.bey_name,
+      p2_bey_name: b2.bey_name,
+      p1_beys: b1.beys,
+      p2_beys: b2.beys,
       p1_score: 0,
       p2_score: 0,
       logs: [],
@@ -923,7 +980,21 @@ export const useTournamentStore = defineStore('tournament', () => {
   function applyScore(matchId: string, winnerId: string, action: FinishAction) {
     const idx = state.value.matches.findIndex((m) => m.match_id === matchId)
     if (idx === -1) return
-    const updated = applyScorePure(state.value.matches[idx]!, winnerId, action)
+    let current = state.value.matches[idx]!
+    if (current.status === 'pending') {
+      const p1p = state.value.participants.find((p) => p.id === current.p1_participant_id)
+      const p2p = state.value.participants.find((p) => p.id === current.p2_participant_id)
+      const s1 = participantBeyFields(p1p)
+      const s2 = participantBeyFields(p2p)
+      current = {
+        ...current,
+        p1_bey_name: s1.bey_name,
+        p1_beys: s1.beys,
+        p2_bey_name: s2.bey_name,
+        p2_beys: s2.beys,
+      }
+    }
+    const updated = applyScorePure(current, winnerId, action)
     const next = [...state.value.matches]
     next[idx] = updated
     updateState((s) => ({ ...s, matches: next }))

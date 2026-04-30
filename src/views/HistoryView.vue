@@ -18,7 +18,8 @@ const tournamentFilterOptions = computed(() => [
 const sortedFinishedMatches = computed(() =>
   store.allFinishedMatches
     .filter((m) => {
-      const isQuick = (m.tournament_name ?? '').trim() === 'Quick Match'
+      const isQuick =
+        m.is_quick_match === true || (m.tournament_name ?? '').trim() === 'Quick Match'
       if (selectedTournamentId.value === 'all') return true
       if (selectedTournamentId.value === 'quick') return isQuick
       return m.tournament_id === selectedTournamentId.value && !isQuick
@@ -71,37 +72,72 @@ function winnerBadgeClass(match: { p1_score: number; p2_score: number }) {
   return 'bg-slate-900/80 text-bx-primary ring-slate-700/80'
 }
 
-function formatTimestamp(ts: string) {
-  const date = new Date(ts)
-  if (Number.isNaN(date.getTime())) return ts
-  const activeLocale = locale.value?.toLowerCase().startsWith('zh')
-    ? 'zh-Hant-HK'
-    : (locale.value || undefined)
+function historyLocale() {
+  return locale.value?.toLowerCase().startsWith('zh') ? 'zh-Hant-HK' : locale.value || undefined
+}
+
+/** Prefer endedAt so history shows when the match finished, not when it was created/scheduled. */
+function matchEndedAtParts(m: { endedAt?: string; timestamp: string }): {
+  dateTime: string
+  ago: string
+} | { raw: string } {
+  const raw = (m.endedAt?.trim() || m.timestamp).trim()
+  const date = new Date(raw)
+  if (Number.isNaN(date.getTime())) return { raw }
+  const activeLocale = historyLocale()
+  const dateTime = new Intl.DateTimeFormat(activeLocale, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date)
 
   const now = Date.now()
   const diffMs = date.getTime() - now
   const absMs = Math.abs(diffMs)
-  const minuteMs = 60 * 1000
+  const sec = 1000
+  const minuteMs = 60 * sec
   const hourMs = 60 * minuteMs
   const dayMs = 24 * hourMs
   const rtf = new Intl.RelativeTimeFormat(activeLocale, { numeric: 'auto' })
 
-  if (absMs < hourMs) {
-    return rtf.format(Math.round(diffMs / minuteMs), 'minute')
-  }
-  if (absMs < dayMs) {
-    return rtf.format(Math.round(diffMs / hourMs), 'hour')
-  }
-  if (absMs < 7 * dayMs) {
-    return rtf.format(Math.round(diffMs / dayMs), 'day')
+  let ago: string
+  if (absMs < 45 * sec) {
+    ago = rtf.format(Math.round(diffMs / sec), 'second')
+  } else if (absMs < hourMs) {
+    ago = rtf.format(Math.round(diffMs / minuteMs), 'minute')
+  } else if (absMs < dayMs) {
+    ago = rtf.format(Math.round(diffMs / hourMs), 'hour')
+  } else if (absMs < 7 * dayMs) {
+    ago = rtf.format(Math.round(diffMs / dayMs), 'day')
+  } else if (absMs < 30 * dayMs) {
+    ago = rtf.format(Math.round(diffMs / (7 * dayMs)), 'week')
+  } else if (absMs < 365 * dayMs) {
+    ago = rtf.format(Math.round(diffMs / (30 * dayMs)), 'month')
+  } else {
+    ago = rtf.format(Math.round(diffMs / (365 * dayMs)), 'year')
   }
 
-  return new Intl.DateTimeFormat(activeLocale, {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
+  return { dateTime, ago }
+}
+
+function matchComboParts(
+  side: 'p1' | 'p2',
+  m: {
+    p1_beys?: string[]
+    p2_beys?: string[]
+    p1_bey_name?: string
+    p2_bey_name?: string
+  },
+): string[] {
+  const beys = side === 'p1' ? m.p1_beys : m.p2_beys
+  const fromBeys = beys?.map((x) => x.trim()).filter(Boolean) ?? []
+  if (fromBeys.length > 0) return fromBeys
+  const legacy = side === 'p1' ? m.p1_bey_name : m.p2_bey_name
+  const legacyParts = (legacy ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  // If old history only stored slot1 (no comma), hide it to avoid misleading partial combo display.
+  return legacyParts.length >= 2 ? legacyParts : []
 }
 
 function normalizeAction(action: string) {
@@ -227,8 +263,18 @@ function downloadExport() {
             {{ t('history.tournament') }}: {{ m.tournament_name || '-' }}
           </p>
           <div class="flex items-center gap-2">
-            <p class="rounded-full border border-slate-700/80 bg-slate-900/80 px-2.5 py-1 text-[11px] font-medium text-slate-400">
-              {{ formatTimestamp(m.timestamp) }}
+            <p
+              v-for="ended in [matchEndedAtParts(m)]"
+              :key="m.match_id + '-ended-at'"
+              class="flex max-w-[min(100%,18rem)] flex-col gap-0.5 rounded-full border border-slate-700/80 bg-slate-900/80 px-2.5 py-1 text-[11px] sm:max-w-none sm:flex-row sm:items-center sm:gap-2"
+            >
+              <template v-if="'raw' in ended">
+                <span class="font-medium text-slate-400">{{ ended.raw }}</span>
+              </template>
+              <template v-else>
+                <span class="shrink-0 font-medium text-slate-300">{{ ended.dateTime }}</span>
+                <span class="font-medium text-slate-500">{{ ended.ago }}</span>
+              </template>
             </p>
             <div
               v-if="winnerName(m)"
@@ -249,9 +295,18 @@ function downloadExport() {
               <p class="truncate text-sm font-bold" :class="m.p1_score > m.p2_score ? 'text-white' : 'text-slate-500'">
                 {{ m.p1_score > m.p2_score ? '🏆 ' : '' }}{{ m.p1_name }}
               </p>
-              <p v-if="m.p1_bey_name" class="mx-auto mt-1 w-fit max-w-full truncate rounded-full border border-slate-700/70 bg-slate-900/70 px-2 py-0.5 text-[11px] font-medium text-slate-400">
-                {{ m.p1_bey_name }}
-              </p>
+              <!-- <div
+                v-if="matchComboParts('p1', m).length > 0"
+                class="mx-auto mt-1 flex max-w-full flex-wrap justify-center gap-1"
+              >
+                <span
+                  v-for="(part, partIdx) in matchComboParts('p1', m)"
+                  :key="'h-p1-' + m.match_id + '-' + partIdx"
+                  class="rounded-full border border-slate-700/70 bg-slate-900/70 px-2 py-0.5 text-[11px] font-medium text-slate-300"
+                >
+                  {{ part }}
+                </span>
+              </div> -->
               <p
                 class="mt-2 text-4xl font-black italic tracking-tight"
                 :class="m.p1_score > m.p2_score ? 'text-red-500' : 'text-red-400/50'"
@@ -266,9 +321,18 @@ function downloadExport() {
               <p class="truncate text-sm font-bold" :class="m.p2_score > m.p1_score ? 'text-white' : 'text-slate-500'">
                 {{ m.p2_score > m.p1_score ? '🏆 ' : '' }}{{ m.p2_name }}
               </p>
-              <p v-if="m.p2_bey_name" class="mx-auto mt-1 w-fit max-w-full truncate rounded-full border border-slate-700/70 bg-slate-900/70 px-2 py-0.5 text-[11px] font-medium text-slate-400">
-                {{ m.p2_bey_name }}
-              </p>
+              <!-- <div
+                v-if="matchComboParts('p2', m).length > 0"
+                class="mx-auto mt-1 flex max-w-full flex-wrap justify-center gap-1"
+              >
+                <span
+                  v-for="(part, partIdx) in matchComboParts('p2', m)"
+                  :key="'h-p2-' + m.match_id + '-' + partIdx"
+                  class="rounded-full border border-slate-700/70 bg-slate-900/70 px-2 py-0.5 text-[11px] font-medium text-slate-300"
+                >
+                  {{ part }}
+                </span>
+              </div> -->
               <p
                 class="mt-2 text-4xl font-black italic tracking-tight"
                 :class="m.p2_score > m.p1_score ? 'text-blue-500' : 'text-blue-400/50'"

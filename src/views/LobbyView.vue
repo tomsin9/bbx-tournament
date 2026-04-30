@@ -194,6 +194,12 @@ const pct = (pid: string) => {
   if (!s) return '0'
   return `${Math.round(winRate(s) * 100)}%`
 }
+
+function isWinRateAtLeastHalf(pid: string) {
+  const s = stats.value.get(pid)
+  if (!s) return false
+  return winRate(s) >= 0.5
+}
 </script>
 
 <template>
@@ -563,7 +569,7 @@ const pct = (pid: string) => {
         class="w-full rounded-xl border border-slate-700 bg-slate-900 px-6 py-2.5 text-xs font-black uppercase tracking-widest text-slate-300 transition-all hover:border-bx-primary/50 hover:text-bx-primary"
         @click="showAllLiveMatches = !showAllLiveMatches"
       >
-        {{ showAllLiveMatches ? 'View less' : t('history.viewMore') }}
+        {{ showAllLiveMatches ? t('history.viewLess') : t('history.viewMore') }}
       </button>
     </section>
 
@@ -655,7 +661,21 @@ const pct = (pid: string) => {
                       : 'hover:bg-white/2'
               "
             >
-              <td class="px-6 py-4">
+              <td class="relative overflow-hidden px-6 py-4">
+                <span
+                  class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-5xl font-black italic tracking-tighter"
+                  :class="
+                    idx === 0
+                      ? 'text-amber-300/12'
+                      : idx === 1
+                        ? 'text-slate-200/12'
+                        : idx === 2
+                          ? 'text-orange-300/12'
+                          : 'text-slate-400/12'
+                  "
+                >
+                  #{{ idx + 1 }}
+                </span>
                 <div class="flex items-end gap-2">
                   <div
                     class="font-bold inline-block"
@@ -689,7 +709,14 @@ const pct = (pid: string) => {
                 <span class="font-bold text-red-400">{{ stats.get(pl.id)?.losses ?? 0 }}</span>
               </td>
               <td class="px-4 py-4 text-center">
-                <div class="inline-flex items-center justify-center rounded-lg bg-slate-800 px-3 py-1 text-xs font-black text-bx-primary">
+                <div
+                  class="inline-flex items-center justify-center rounded-lg px-3 py-1 text-xs font-black"
+                  :class="
+                    isWinRateAtLeastHalf(pl.id)
+                      ? 'bg-emerald-500/15 text-emerald-300'
+                      : 'bg-slate-800 text-slate-300'
+                  "
+                >
                   {{ pct(pl.id) }}
                 </div>
               </td>

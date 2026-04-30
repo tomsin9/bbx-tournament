@@ -222,6 +222,7 @@ function persistQuickMatchToHistory(m: Match | null) {
     timestamp: endedAt,
     endedAt,
     tournament_name: 'Quick Match',
+    is_quick_match: true,
   }
   if (store.tournamentList.length === 0) {
     store.newTournament()

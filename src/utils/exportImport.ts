@@ -119,12 +119,19 @@ function coerceMatch(v: unknown, defaultTargetPoints: number): Match | null {
   if (o.endedAt !== undefined && typeof o.endedAt !== 'string') return null
   if (o.p1_bey_name !== undefined && typeof o.p1_bey_name !== 'string') return null
   if (o.p2_bey_name !== undefined && typeof o.p2_bey_name !== 'string') return null
+  if (o.p1_beys !== undefined) {
+    if (!Array.isArray(o.p1_beys) || !o.p1_beys.every((x) => typeof x === 'string')) return null
+  }
+  if (o.p2_beys !== undefined) {
+    if (!Array.isArray(o.p2_beys) || !o.p2_beys.every((x) => typeof x === 'string')) return null
+  }
   const tp =
     typeof o.target_points === 'number' && o.target_points >= 1
       ? o.target_points
       : defaultTargetPoints
   if (!Array.isArray(o.logs) || !o.logs.every(isLogEntry)) return null
   if (o.tournament_name !== undefined && typeof o.tournament_name !== 'string') return null
+  if (o.is_quick_match !== undefined && typeof o.is_quick_match !== 'boolean') return null
   const logs: MatchLogEntry[] = o.logs.map((log) => {
     const l = log as unknown as Record<string, unknown>
     return {
@@ -150,8 +157,17 @@ function coerceMatch(v: unknown, defaultTargetPoints: number): Match | null {
     endedAt: o.endedAt as string | undefined,
     target_points: tp,
     tournament_name: o.tournament_name as string | undefined,
+    is_quick_match: typeof o.is_quick_match === 'boolean' ? o.is_quick_match : undefined,
     p1_bey_name: typeof o.p1_bey_name === 'string' ? o.p1_bey_name : undefined,
     p2_bey_name: typeof o.p2_bey_name === 'string' ? o.p2_bey_name : undefined,
+    p1_beys:
+      Array.isArray(o.p1_beys) && o.p1_beys.every((x) => typeof x === 'string')
+        ? o.p1_beys.filter((x) => x.trim())
+        : undefined,
+    p2_beys:
+      Array.isArray(o.p2_beys) && o.p2_beys.every((x) => typeof x === 'string')
+        ? o.p2_beys.filter((x) => x.trim())
+        : undefined,
     winner_participant_id:
       typeof o.winner_participant_id === 'string'
         ? o.winner_participant_id

@@ -52,6 +52,9 @@ export interface Match {
   p2_participant_id: string
   p1_bey_name?: string
   p2_bey_name?: string
+  /** Full gear loadout when the match was scheduled / snapshotted (preferred over bey_name for display). */
+  p1_beys?: string[]
+  p2_beys?: string[]
   p1_score: number
   p2_score: number
   logs: MatchLogEntry[]
@@ -61,6 +64,7 @@ export interface Match {
   endedAt?: string
   target_points: number
   tournament_name?: string
+  is_quick_match?: boolean
   winner_participant_id?: string
   stage?: MatchStage
 }

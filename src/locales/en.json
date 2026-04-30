@@ -171,6 +171,7 @@
     "winner": "Winner: {name}",
     "matchDetails": "Match Details",
     "viewMore": "View more",
+    "viewLess": "View less",
     "actions": {
       "sf": "Spin Finish",
       "of": "Over Finish",

@@ -7,6 +7,7 @@ import type {
   TournamentRecord,
 } from '@/types/bxtm'
 import { APP_VERSION } from '@/types/bxtm'
+import { canonicalizeBeyValue } from '@/utils/bladeResolver'
 import { normalizeImportedState } from '@/utils/exportImport'
 
 export const STORAGE_KEY = 'bxtm_state'
@@ -44,9 +45,10 @@ function buildCatalog(tournaments: TournamentRecord[], rawCatalog: unknown): Pla
         .map((part) => part.trim())
         .filter(Boolean)
       for (const bey of pieces) {
-        if (seen.has(bey)) continue
-        seen.add(bey)
-        next.push(bey)
+        const canonical = canonicalizeBeyValue(bey)
+        if (!canonical || seen.has(canonical)) continue
+        seen.add(canonical)
+        next.push(canonical)
       }
     }
     return next
