@@ -119,27 +119,6 @@ function matchEndedAtParts(m: { endedAt?: string; timestamp: string }): {
   return { dateTime, ago }
 }
 
-function matchComboParts(
-  side: 'p1' | 'p2',
-  m: {
-    p1_beys?: string[]
-    p2_beys?: string[]
-    p1_bey_name?: string
-    p2_bey_name?: string
-  },
-): string[] {
-  const beys = side === 'p1' ? m.p1_beys : m.p2_beys
-  const fromBeys = beys?.map((x) => x.trim()).filter(Boolean) ?? []
-  if (fromBeys.length > 0) return fromBeys
-  const legacy = side === 'p1' ? m.p1_bey_name : m.p2_bey_name
-  const legacyParts = (legacy ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-  // If old history only stored slot1 (no comma), hide it to avoid misleading partial combo display.
-  return legacyParts.length >= 2 ? legacyParts : []
-}
-
 function normalizeAction(action: string) {
   return action.trim().toLowerCase()
 }

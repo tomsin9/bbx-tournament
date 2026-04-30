@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import type {
   BattleFormat,
-  Combo,
-  PlayerProfile,
   StadiumType,
   TournamentFormat,
   TournamentParticipant,
@@ -12,9 +10,6 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useTournamentStore } from '@/stores/tournament'
 import PlayerManagerPanel from '@/components/PlayerManagerPanel.vue'
-import {
-  normalizeBeys,
-} from '@/utils/combo'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -32,9 +27,7 @@ const playoffEnabled = ref(store.playoffEnabled)
 const playoffThirdPlace = ref(store.playoffThirdPlace)
 const stadiumType = ref<StadiumType>(store.stadiumType)
 const draftPlayers = ref<TournamentParticipant[]>([])
-const playerName = ref('')
 const playerBeys = ref<string[]>([])
-const editingId = ref<string | null>(null)
 const activeTab = ref<'rules' | 'players'>('rules')
 const rosterPlayers = computed(() => (isNewSetup.value ? draftPlayers.value : store.players))
 const slotCount = computed(() => Math.max(1, Math.floor(maxBeysPerPlayer.value || 1)))
@@ -79,36 +72,6 @@ watch(tournamentFormat, (next) => {
     playoffThirdPlace.value = true
   }
 })
-
-function submitPlayer() {
-  if (isNewSetup.value) {
-    const nameValue = playerName.value.trim()
-    if (!nameValue) return
-    const beys = normalizeBeys(playerBeys.value)
-    const bey = beys[0]
-    const today = new Date().toISOString().slice(0, 10)
-    const id = editingId.value ?? `tp-${crypto.randomUUID().slice(0, 8)}`
-    const existing = draftPlayers.value.find((p) => p.id === id)
-    const player_id = existing?.player_id ?? `pl-${crypto.randomUUID().slice(0, 8)}`
-    const next = [...draftPlayers.value]
-    const idx = next.findIndex((p) => p.id === id)
-    const row: TournamentParticipant = {
-      id,
-      player_id,
-      name: nameValue,
-      bey_name: bey,
-      beys: beys.length ? [...beys] : undefined,
-      created_at: today,
-    }
-    if (idx >= 0) next[idx] = row
-    else next.push(row)
-    draftPlayers.value = next
-    playerName.value = ''
-    playerBeys.value = makeEmptySlots()
-    editingId.value = null
-    return
-  }
-}
 
 function updateDraftPlayers(next: TournamentParticipant[]) {
   draftPlayers.value = next
