@@ -2,6 +2,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import type {
   BattleFormat,
+  Combo,
   PlayerProfile,
   StadiumType,
   TournamentFormat,
@@ -10,6 +11,7 @@ import type {
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useTournamentStore } from '@/stores/tournament'
+import BeySlotInput from '@/components/BeySlotInput.vue'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -20,6 +22,7 @@ store.hydrate()
 const isNewSetup = computed(() => route.query.mode === 'new')
 const name = ref(store.tournamentName || '')
 const target = ref(store.targetPoints)
+const maxBeysPerPlayer = ref(store.maxBeysPerPlayer)
 const battleFormat = ref<BattleFormat>(store.battleFormat)
 const tournamentFormat = ref<TournamentFormat>(store.tournamentFormat)
 const playoffEnabled = ref(store.playoffEnabled)
@@ -27,8 +30,11 @@ const playoffThirdPlace = ref(store.playoffThirdPlace)
 const stadiumType = ref<StadiumType>(store.stadiumType)
 const draftPlayers = ref<TournamentParticipant[]>([])
 const playerName = ref('')
-const playerBey = ref('')
+const playerBeys = ref<string[]>([])
 const editingId = ref<string | null>(null)
+const saveAsNewCombo = ref(true)
+const editingComboId = ref<string | null>(null)
+const comboName = ref('')
 const libraryEditingId = ref<string | null>(null)
 const libraryName = ref('')
 const libraryBey = ref('')
@@ -36,12 +42,47 @@ const isLibraryCollapsedMobile = ref(false)
 const activeTab = ref<'rules' | 'players'>('rules')
 const playerNameInput = ref<HTMLInputElement | null>(null)
 const rosterPlayers = computed(() => (isNewSetup.value ? draftPlayers.value : store.players))
+const slotCount = computed(() => Math.max(1, Math.floor(maxBeysPerPlayer.value || 1)))
+const canEditCreationSettings = computed(() => isNewSetup.value)
 
 const canSave = computed(
   () => name.value.trim().length > 0 && rosterPlayers.value.length >= 2,
 )
 const canAddPlayer = computed(() => playerName.value.trim().length > 0)
 const libraryOptions = computed(() => store.playerLibrary)
+const editingProfile = computed(() => {
+  if (!editingId.value) return null
+  const participant = rosterPlayers.value.find((p) => p.id === editingId.value)
+  if (!participant) return null
+  return store.profileById(participant.player_id) ?? null
+})
+const editingProfileCombos = computed(() => editingProfile.value?.combos ?? [])
+
+function makeEmptySlots(count = slotCount.value): string[] {
+  return Array.from({ length: count }, () => '')
+}
+
+function normalizeBeys(values: string[]): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const value of values) {
+    const bey = value.trim()
+    if (!bey || seen.has(bey)) continue
+    seen.add(bey)
+    out.push(bey)
+  }
+  return out
+}
+
+function comboLabel(combo: Combo): string {
+  return combo.name?.trim() || combo.beys.join(', ')
+}
+
+function profileRecentCombos(profile: PlayerProfile): Combo[] {
+  return [...(profile.combos ?? [])]
+    .sort((a, b) => b.lastUsed.localeCompare(a.lastUsed))
+    .slice(0, 3)
+}
 
 onMounted(() => {
   if (isNewSetup.value) {
@@ -52,7 +93,9 @@ onMounted(() => {
     playoffEnabled.value = false
     playoffThirdPlace.value = true
     stadiumType.value = 'xtreme_standard'
+    maxBeysPerPlayer.value = 3
     draftPlayers.value = []
+    playerBeys.value = makeEmptySlots(3)
     return
   }
   name.value = store.tournamentName
@@ -62,6 +105,8 @@ onMounted(() => {
   playoffEnabled.value = store.playoffEnabled
   playoffThirdPlace.value = store.playoffThirdPlace
   stadiumType.value = store.stadiumType
+  maxBeysPerPlayer.value = store.maxBeysPerPlayer
+  playerBeys.value = makeEmptySlots(store.maxBeysPerPlayer)
 })
 
 watch(tournamentFormat, (next) => {
@@ -81,8 +126,11 @@ function isInRoster(profileId: string) {
 
 function resetPlayerForm() {
   playerName.value = ''
-  playerBey.value = ''
+  playerBeys.value = makeEmptySlots()
   editingId.value = null
+  saveAsNewCombo.value = true
+  editingComboId.value = null
+  comboName.value = ''
   void focusPlayerNameInput()
 }
 
@@ -91,14 +139,22 @@ function submitPlayer() {
   if (isNewSetup.value) {
     const nameValue = playerName.value.trim()
     if (!nameValue) return
-    const bey = playerBey.value.trim() || undefined
+    const beys = normalizeBeys(playerBeys.value)
+    const bey = beys[0]
     const today = new Date().toISOString().slice(0, 10)
     const id = editingId.value ?? `tp-${crypto.randomUUID().slice(0, 8)}`
     const existing = draftPlayers.value.find((p) => p.id === id)
     const player_id = existing?.player_id ?? `pl-${crypto.randomUUID().slice(0, 8)}`
     const next = [...draftPlayers.value]
     const idx = next.findIndex((p) => p.id === id)
-    const row: TournamentParticipant = { id, player_id, name: nameValue, bey_name: bey, created_at: today }
+    const row: TournamentParticipant = {
+      id,
+      player_id,
+      name: nameValue,
+      bey_name: bey,
+      beys: beys.length ? [...beys] : undefined,
+      created_at: today,
+    }
     if (idx >= 0) next[idx] = row
     else next.push(row)
     draftPlayers.value = next
@@ -108,7 +164,10 @@ function submitPlayer() {
   store.addOrUpdatePlayer({
     id: editingId.value ?? undefined,
     name: playerName.value,
-    bey_name: playerBey.value,
+    beys: normalizeBeys(playerBeys.value),
+    comboName: saveAsNewCombo.value ? comboName.value : undefined,
+    saveAsNewCombo: saveAsNewCombo.value,
+    editingComboId: saveAsNewCombo.value ? undefined : editingComboId.value ?? undefined,
   })
   resetPlayerForm()
 }
@@ -117,7 +176,18 @@ function editPlayer(player: TournamentParticipant) {
   activeTab.value = 'players'
   editingId.value = player.id
   playerName.value = player.name
-  playerBey.value = player.bey_name ?? ''
+  playerBeys.value = makeEmptySlots()
+  const parsed = (player.beys?.length ? player.beys : (player.bey_name ?? '').split(','))
+    .map((part) => part.trim())
+    .filter(Boolean)
+  parsed.forEach((bey, idx) => {
+    if (idx < playerBeys.value.length) playerBeys.value[idx] = bey
+  })
+  const profile = store.profileById(player.player_id)
+  const matched = profile?.combos?.find((combo) => combo.beys.join('|') === parsed.join('|'))
+  editingComboId.value = matched?.id ?? null
+  saveAsNewCombo.value = false
+  comboName.value = matched?.name ?? ''
   void focusPlayerNameInput()
 }
 
@@ -137,7 +207,7 @@ function startEditLibraryPlayer(id: string) {
   if (!profile) return
   libraryEditingId.value = id
   libraryName.value = profile.name
-  libraryBey.value = profile.default_bey_name ?? ''
+  libraryBey.value = profile.combos?.[0]?.beys?.join(', ') ?? ''
 }
 
 function cancelEditLibraryPlayer() {
@@ -151,7 +221,13 @@ function saveLibraryPlayer() {
   store.updatePlayerProfile({
     id: libraryEditingId.value,
     name: libraryName.value,
-    default_bey_name: libraryBey.value,
+    combos: [
+      {
+        id: `cb-${crypto.randomUUID().slice(0, 8)}`,
+        beys: normalizeBeys(libraryBey.value.split(',')),
+        lastUsed: new Date().toISOString(),
+      },
+    ],
   })
   cancelEditLibraryPlayer()
 }
@@ -180,11 +256,14 @@ function save() {
   store.applySetup({
     tournamentName: name.value,
     targetPoints: target.value,
-    battleFormat: battleFormat.value,
-    tournamentFormat: tournamentFormat.value,
+    battleFormat: canEditCreationSettings.value ? battleFormat.value : store.battleFormat,
+    tournamentFormat: canEditCreationSettings.value ? tournamentFormat.value : store.tournamentFormat,
     playoffEnabled: playoffEnabled.value,
     playoffThirdPlace: playoffThirdPlace.value,
     stadiumType: stadiumType.value,
+    maxBeysPerPlayer: canEditCreationSettings.value
+      ? maxBeysPerPlayer.value
+      : store.maxBeysPerPlayer,
     players: rosterPlayers.value,
   })
   store.buildInitialScheduledMatches()
@@ -195,7 +274,7 @@ function quickAddFromLibrary(profile: PlayerProfile) {
   if (isInRoster(profile.id)) return
 
   const defaultBey =
-    (profile.default_bey_name ?? profile.bey_combos?.[0])?.trim() || undefined
+    (profile.combos?.[0]?.beys?.[0] ?? profile.default_bey_name)?.trim() || undefined
 
   if (isNewSetup.value) {
     const today = new Date().toISOString().slice(0, 10)
@@ -206,6 +285,7 @@ function quickAddFromLibrary(profile: PlayerProfile) {
         player_id: profile.id,
         name: profile.name,
         bey_name: defaultBey,
+        beys: defaultBey ? [defaultBey] : undefined,
         created_at: profile.created_at ?? today,
       },
     ]
@@ -214,6 +294,65 @@ function quickAddFromLibrary(profile: PlayerProfile) {
 
   store.addPlayersFromLibrary([{ profile, bey_name: defaultBey }])
 }
+
+function applyRecentCombo(profile: PlayerProfile, combo: Combo): void {
+  playerName.value = profile.name
+  playerBeys.value = makeEmptySlots()
+  combo.beys.forEach((bey, idx) => {
+    if (idx < playerBeys.value.length) playerBeys.value[idx] = bey
+  })
+  editingComboId.value = combo.id
+  saveAsNewCombo.value = false
+  comboName.value = combo.name ?? ''
+  editingId.value = null
+  activeTab.value = 'players'
+}
+
+function pickEditingProfileCombo(combo: Combo): void {
+  playerBeys.value = makeEmptySlots()
+  combo.beys.forEach((bey, idx) => {
+    if (idx < playerBeys.value.length) playerBeys.value[idx] = bey
+  })
+  editingComboId.value = combo.id
+  comboName.value = combo.name ?? ''
+  saveAsNewCombo.value = false
+}
+
+function deleteEditingProfileCombo(combo: Combo): void {
+  const profile = editingProfile.value
+  if (!profile) return
+  store.deletePlayerCombo(profile.id, combo.id)
+  if (editingComboId.value === combo.id) {
+    editingComboId.value = null
+    saveAsNewCombo.value = true
+    comboName.value = ''
+    playerBeys.value = makeEmptySlots()
+  }
+}
+
+function updatePlayerSlot(index: number, value: string): void {
+  if (index < 0 || index >= playerBeys.value.length) return
+  const next = [...playerBeys.value]
+  next[index] = value
+  playerBeys.value = next
+}
+
+function handleQuickPaste(raw: string, slotIndex: number): void {
+  const parts = raw.split(',').map((part) => part.trim()).filter(Boolean)
+  if (parts.length === 0) return
+  const next = [...playerBeys.value]
+  for (let i = 0; i < parts.length; i += 1) {
+    const target = slotIndex + i
+    if (target >= next.length) break
+    next[target] = parts[i]!
+  }
+  playerBeys.value = next
+}
+
+watch(slotCount, (next) => {
+  const prev = playerBeys.value
+  playerBeys.value = Array.from({ length: next }, (_, idx) => prev[idx] ?? '')
+})
 
 </script>
 
@@ -293,8 +432,11 @@ function quickAddFromLibrary(profile: PlayerProfile) {
             :class="
               tournamentFormat === 'free'
                 ? 'border-bx-primary bg-bx-primary text-black'
-                : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-bx-primary/60'
+                : canEditCreationSettings
+                  ? 'border-slate-700 bg-slate-900 text-slate-300 hover:border-bx-primary/60'
+                  : 'border-slate-700 bg-slate-900 text-slate-500 opacity-60'
             "
+            :disabled="!canEditCreationSettings"
             @click="tournamentFormat = 'free'"
           >
             {{ t('setup.tournamentFormatFree') }}
@@ -305,8 +447,11 @@ function quickAddFromLibrary(profile: PlayerProfile) {
             :class="
               tournamentFormat === 'round_robin'
                 ? 'border-bx-primary bg-bx-primary text-black'
-                : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-bx-primary/60'
+                : canEditCreationSettings
+                  ? 'border-slate-700 bg-slate-900 text-slate-300 hover:border-bx-primary/60'
+                  : 'border-slate-700 bg-slate-900 text-slate-500 opacity-60'
             "
+            :disabled="!canEditCreationSettings"
             @click="tournamentFormat = 'round_robin'"
           >
             {{ t('setup.tournamentFormatRoundRobin') }}
@@ -317,8 +462,11 @@ function quickAddFromLibrary(profile: PlayerProfile) {
             :class="
               tournamentFormat === 'single_elimination'
                 ? 'border-bx-primary bg-bx-primary text-black'
-                : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-bx-primary/60'
+                : canEditCreationSettings
+                  ? 'border-slate-700 bg-slate-900 text-slate-300 hover:border-bx-primary/60'
+                  : 'border-slate-700 bg-slate-900 text-slate-500 opacity-60'
             "
+            :disabled="!canEditCreationSettings"
             @click="tournamentFormat = 'single_elimination'"
           >
             {{ t('setup.tournamentFormatSingleElimination') }}
@@ -348,8 +496,11 @@ function quickAddFromLibrary(profile: PlayerProfile) {
             :class="
               battleFormat === 'singles'
                 ? 'border-bx-primary bg-bx-primary text-black'
-                : 'border-slate-700 bg-slate-900 text-slate-300 hover:border-bx-primary/60'
+                : canEditCreationSettings
+                  ? 'border-slate-700 bg-slate-900 text-slate-300 hover:border-bx-primary/60'
+                  : 'border-slate-700 bg-slate-900 text-slate-500 opacity-60'
             "
+            :disabled="!canEditCreationSettings"
             @click="battleFormat = 'singles'"
           >
             {{ t('setup.formatSingles') }}
@@ -362,7 +513,7 @@ function quickAddFromLibrary(profile: PlayerProfile) {
                 ? 'border-bx-primary bg-bx-primary text-black'
                 : 'border-slate-700 bg-slate-900 text-slate-500 opacity-50'
             "
-            disabled
+            :disabled="true"
             @click="battleFormat = 'doubles'"
           >
             {{ t('setup.formatDoubles') }}
@@ -384,6 +535,31 @@ function quickAddFromLibrary(profile: PlayerProfile) {
           <option value="three_player">{{ t('setup.stadiumThreePlayer') }}</option>
           <option value="custom">{{ t('setup.stadiumCustom') }}</option>
         </select>
+      </div>
+
+      <div class="group space-y-2">
+        <label class="text-xs font-black uppercase tracking-widest text-slate-500 transition-colors group-focus-within:text-bx-primary">
+          {{ t('setup.maxBeysPerPlayer') }}
+        </label>
+        <div class="grid grid-cols-4 gap-2">
+          <button
+            v-for="n in [1, 3, 4, 5]"
+            :key="'max-bey-' + n"
+            type="button"
+            class="rounded-xl border px-3 py-2 text-xs font-black uppercase tracking-wider transition-all"
+            :class="
+              maxBeysPerPlayer === n
+                ? 'border-bx-primary bg-bx-primary text-black'
+                : canEditCreationSettings
+                  ? 'border-slate-700 bg-slate-900 text-slate-300 hover:border-bx-primary/60'
+                  : 'border-slate-700 bg-slate-900 text-slate-500 opacity-60'
+            "
+            :disabled="!canEditCreationSettings"
+            @click="maxBeysPerPlayer = n"
+          >
+            {{ n }}
+          </button>
+        </div>
       </div>
     </section>
 
@@ -656,22 +832,90 @@ function quickAddFromLibrary(profile: PlayerProfile) {
       <section class="relative group">
         <div class="absolute -inset-0.5 rounded-3xl bg-linear-to-r from-bx-primary/40 to-bx-accent/40 blur opacity-30"></div>
         <div class="relative rounded-3xl bg-slate-950 p-5 ring-1 ring-white/10" :class="{ 'ring-bx-primary/50 bg-bx-primary/5': editingId }">
-          <div class="flex flex-col gap-4 sm:flex-row sm:items-end">
-            <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="space-y-4">
+            <div class="grid grid-cols-1 gap-4">
               <div class="space-y-1.5">
                 <label class="px-1 text-[10px] font-black uppercase tracking-widest text-slate-500 italic">{{ t('setup.playerName') }}</label>
                 <input ref="playerNameInput" v-model="playerName" type="text" class="w-full rounded-xl border-2 border-slate-800 bg-slate-900 px-4 py-2.5 text-white focus:border-bx-primary outline-none transition-all" :placeholder="t('setup.playerName')" @keyup.enter="submitPlayer" />
               </div>
               <div class="space-y-1.5">
                 <label class="px-1 text-[10px] font-black uppercase tracking-widest text-slate-500 italic">{{ t('setup.playerBey') }}</label>
-                <input v-model="playerBey" type="text" class="w-full rounded-xl border-2 border-slate-800 bg-slate-900 px-4 py-2.5 text-white focus:border-bx-primary outline-none" :placeholder="t('setup.playerBey')" @keyup.enter="submitPlayer" />
+                <div class="grid grid-cols-1 gap-2 lg:grid-cols-2">
+                  <div
+                    v-for="(_, idx) in playerBeys"
+                    :key="'player-slot-' + idx"
+                    class="rounded-xl border border-slate-800 bg-slate-950/40 p-3"
+                  >
+                    <p class="mb-1 px-1 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                      {{ t('setup.gearSlot', { n: idx + 1 }) }}
+                    </p>
+                    <BeySlotInput
+                      :model-value="playerBeys[idx] ?? ''"
+                      :slot-index="idx"
+                      @update:model-value="(value) => updatePlayerSlot(idx, value)"
+                      @quick-paste="handleQuickPaste"
+                    />
+                  </div>
+                </div>
+                <div v-if="editingId && editingProfileCombos.length" class="space-y-1">
+                  <p class="px-1 text-[10px] font-black uppercase tracking-widest text-slate-600">
+                    {{ t('players.libraryKnownCombos') }}
+                  </p>
+                  <div class="flex flex-wrap gap-1.5">
+                    <div
+                      v-for="combo in editingProfileCombos"
+                      :key="'setup-edit-combo-' + combo.id"
+                      class="flex items-center gap-1 rounded-full border px-1.5 py-1"
+                      :class="
+                        editingComboId === combo.id && !saveAsNewCombo
+                          ? 'border-bx-primary bg-bx-primary/15'
+                          : 'border-slate-700 bg-slate-900'
+                      "
+                    >
+                      <button
+                        type="button"
+                        class="px-1 text-[10px] font-black uppercase tracking-wide transition-all active:scale-95"
+                        :class="
+                          editingComboId === combo.id && !saveAsNewCombo
+                            ? 'text-bx-primary'
+                            : 'text-slate-300 hover:text-bx-primary'
+                        "
+                        @click="pickEditingProfileCombo(combo)"
+                      >
+                        {{ comboLabel(combo) }}
+                      </button>
+                      <button
+                        type="button"
+                        class="rounded-full border border-slate-700 px-1.5 py-0.5 text-[10px] font-black text-slate-400 transition-colors hover:border-red-400/50 hover:text-red-300"
+                        @click="deleteEditingProfileCombo(combo)"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-            <div class="flex gap-2">
-              <button @click="submitPlayer" :disabled="!canAddPlayer" class="px-8 py-3 rounded-xl bg-bx-primary text-black font-black uppercase italic text-xs tracking-widest hover:brightness-110 active:scale-95 disabled:opacity-20 transition-all">
-                {{ editingId ? t('setup.updatePlayer') : t('setup.addToRoster') }}
-              </button>
-              <button v-if="editingId" @click="resetPlayerForm" class="px-4 py-3 rounded-xl bg-slate-800 text-slate-400">✕</button>
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+              <div class="w-full max-w-md space-y-2">
+                <label class="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
+                  <input v-model="saveAsNewCombo" type="checkbox" class="h-4 w-4 accent-bx-primary" />
+                  {{ t('setup.saveAsNewCombo') }}
+                </label>
+                <input
+                  v-if="saveAsNewCombo || !editingComboId"
+                  v-model="comboName"
+                  type="text"
+                  class="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs text-white focus:border-bx-primary focus:outline-none"
+                  :placeholder="t('setup.comboNameOptional')"
+                />
+              </div>
+              <div class="flex gap-2">
+                <button @click="submitPlayer" :disabled="!canAddPlayer" class="px-8 py-3 rounded-xl bg-bx-primary text-black font-black uppercase italic text-xs tracking-widest hover:brightness-110 active:scale-95 disabled:opacity-20 transition-all">
+                  {{ editingId ? t('setup.updatePlayer') : t('setup.addToRoster') }}
+                </button>
+                <button v-if="editingId" @click="resetPlayerForm" class="px-4 py-3 rounded-xl bg-slate-800 text-slate-400">✕</button>
+              </div>
             </div>
           </div>
         </div>
@@ -742,8 +986,23 @@ function quickAddFromLibrary(profile: PlayerProfile) {
               >
                 <button type="button" class="min-w-0 flex-1 text-left" @click="quickAddFromLibrary(p)">
                   <p class="truncate font-black italic uppercase text-white">{{ p.name }}</p>
-                  <p class="truncate text-[10px] font-bold text-slate-500 uppercase">{{ p.default_bey_name || t('players.stockBey') }}</p>
+                  <p class="truncate text-[10px] font-bold text-slate-500 uppercase">{{ p.combos?.[0]?.beys?.join(', ') || p.default_bey_name || t('players.stockBey') }}</p>
                 </button>
+
+                <div
+                  v-if="profileRecentCombos(p).length && !isInRoster(p.id)"
+                  class="mt-2 flex flex-wrap gap-1"
+                >
+                  <button
+                    v-for="combo in profileRecentCombos(p)"
+                    :key="combo.id"
+                    type="button"
+                    class="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-slate-300 transition-colors hover:border-bx-primary/40 hover:text-bx-primary"
+                    @click.stop="applyRecentCombo(p, combo)"
+                  >
+                    {{ comboLabel(combo) }}
+                  </button>
+                </div>
                 
                 <div class="flex items-center gap-1">
                   <button @click="startEditLibraryPlayer(p.id)" class="opacity-0 group-hover:opacity-100 p-2 text-slate-600 hover:text-white transition-all">

@@ -32,6 +32,7 @@ const canFinalizeDraw = computed(() =>
 )
 const isDrawing = ref(false)
 const drawRevealPair = ref<[string, string] | null>(null)
+const showAllLiveMatches = ref(false)
 
 const stats = computed(() => computePlayerStats(store.players, store.matches))
 const currentRound = computed(() => {
@@ -58,6 +59,10 @@ const rankedPlayers = computed(() =>
   }),
 )
 const topPlayers = computed(() => rankedPlayers.value.slice(0, 3))
+const visibleLiveMatches = computed(() =>
+  showAllLiveMatches.value ? store.liveMatches : store.liveMatches.slice(0, 3),
+)
+const hasMoreLiveMatches = computed(() => store.liveMatches.length > 3)
 const podiumBgClasses = [
   'bg-amber-300/12 ring-amber-300/30 border-amber-300/35',
   'bg-slate-300/10 ring-slate-300/30 border-slate-300/30',
@@ -72,6 +77,23 @@ function playerName(pid: string) {
 function participantShortId(participantId: string) {
   const p = store.playerById(participantId)
   return p ? shortPlayerIdSuffix(p.player_id) : shortPlayerIdSuffix(participantId)
+}
+
+function comboText(participant: { beys?: string[]; bey_name?: string } | undefined): string {
+  if (!participant) return t('match.noBey')
+  const beys = participant.beys?.map((item) => item.trim()).filter(Boolean) ?? []
+  if (beys.length > 0) return beys.join(', ')
+  return participant.bey_name?.trim() || t('match.noBey')
+}
+
+function comboParts(participant: { beys?: string[]; bey_name?: string } | undefined): string[] {
+  if (!participant) return []
+  const fromBeys = participant.beys?.map((item) => item.trim()).filter(Boolean) ?? []
+  if (fromBeys.length > 0) return fromBeys
+  return (participant.bey_name ?? '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
 }
 
 function pickRandomPlayer(excludeId?: string) {
@@ -325,7 +347,7 @@ const pct = (pid: string) => {
               >
                 <option value="" disabled>{{ t('lobby.selectWarrior') }}</option>
                 <option v-for="pl in store.players" :key="pl.id" :value="pl.id" :disabled="pl.id === p2">
-                  {{ pl.name }} {{ pl.bey_name ? `(${pl.bey_name})` : '' }}
+                  {{ pl.name }} ({{ comboText(pl) }})
                 </option>
               </select>
               <div class="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-slate-500">
@@ -360,7 +382,7 @@ const pct = (pid: string) => {
               >
                 <option value="" disabled>{{ t('lobby.selectWarrior') }}</option>
                 <option v-for="pl in store.players" :key="pl.id" :value="pl.id" :disabled="pl.id === p1">
-                  {{ pl.name }} {{ pl.bey_name ? `(${pl.bey_name})` : '' }}
+                  {{ pl.name }} ({{ comboText(pl) }})
                 </option>
               </select>
               <div class="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 text-slate-500">
@@ -494,7 +516,7 @@ const pct = (pid: string) => {
       </div>
       <div class="grid gap-3">
         <div
-          v-for="m in store.liveMatches"
+          v-for="m in visibleLiveMatches"
           :key="m.match_id"
           class="group rounded-4xl border border-slate-700 bg-slate-900/45 p-4 ring-1 ring-white/8 transition-all hover:border-bx-primary/35 hover:shadow-[0_10px_26px_rgba(0,0,0,0.22)] sm:p-5"
         >
@@ -535,6 +557,14 @@ const pct = (pid: string) => {
           </div>
         </div>
       </div>
+      <button
+        v-if="hasMoreLiveMatches"
+        type="button"
+        class="w-full rounded-xl border border-slate-700 bg-slate-900 px-6 py-2.5 text-xs font-black uppercase tracking-widest text-slate-300 transition-all hover:border-bx-primary/50 hover:text-bx-primary"
+        @click="showAllLiveMatches = !showAllLiveMatches"
+      >
+        {{ showAllLiveMatches ? 'View less' : t('history.viewMore') }}
+      </button>
     </section>
 
     <section v-if="store.hasPlayers" class="space-y-4">
@@ -565,7 +595,21 @@ const pct = (pid: string) => {
             </p>
           </div>
 
-          <p class="text-xs text-slate-400">{{ pl.bey_name || t('match.noBey') }}</p>
+          <div class="mt-1 flex flex-wrap gap-1">
+            <span
+              v-for="(part, partIdx) in comboParts(pl)"
+              :key="'podium-combo-' + pl.id + '-' + partIdx"
+              class="rounded-full border border-slate-700 bg-slate-900 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-300"
+            >
+              {{ part }}
+            </span>
+            <span
+              v-if="comboParts(pl).length === 0"
+              class="rounded-full border border-slate-700 bg-slate-900 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500"
+            >
+              {{ t('match.noBey') }}
+            </span>
+          </div>
           <p class="mt-3 text-xs text-slate-400">
             {{ t('lobby.record') }}:
             <span class="font-bold text-bx-primary">{{ stats.get(pl.id)?.wins ?? 0 }}</span>
@@ -623,7 +667,21 @@ const pct = (pid: string) => {
                     {{ t('players.shortId', { id: shortPlayerIdSuffix(pl.player_id) }) }}
                   </div>
                 </div>
-                <div class="text-sm font-medium text-slate-400">{{ pl.bey_name || '-' }}</div>
+                <div class="mt-1 flex flex-wrap gap-1">
+                  <span
+                    v-for="(part, partIdx) in comboParts(pl)"
+                    :key="'stats-combo-' + pl.id + '-' + partIdx"
+                    class="rounded-full border border-slate-700 bg-slate-900 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-300"
+                  >
+                    {{ part }}
+                  </span>
+                  <span
+                    v-if="comboParts(pl).length === 0"
+                    class="rounded-full border border-slate-700 bg-slate-900 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500"
+                  >
+                    {{ t('match.noBey') }}
+                  </span>
+                </div>
               </td>
               <td class="px-4 py-4 text-center tabular-nums">
                 <span class="font-bold text-bx-primary">{{ stats.get(pl.id)?.wins ?? 0 }}</span>

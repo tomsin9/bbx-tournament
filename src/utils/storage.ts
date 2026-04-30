@@ -1,5 +1,6 @@
 import type {
   BxTmState,
+  Combo,
   PlayerProfile,
   TournamentCollection,
   TournamentParticipant,
@@ -34,16 +35,68 @@ export function emptyCollection(): TournamentCollection {
 }
 
 function buildCatalog(tournaments: TournamentRecord[], rawCatalog: unknown): PlayerProfile[] {
-  function mergeCombos(existing: PlayerProfile | undefined, incoming: Array<string | undefined>): string[] {
+  function normalizeBeys(values: Array<string | undefined>): string[] {
     const seen = new Set<string>()
     const next: string[] = []
-    for (const raw of [...(existing?.bey_combos ?? []), existing?.default_bey_name, ...incoming]) {
-      const combo = raw?.trim()
-      if (!combo || seen.has(combo)) continue
-      seen.add(combo)
-      next.push(combo)
+    for (const raw of values) {
+      const pieces = (raw ?? '')
+        .split(',')
+        .map((part) => part.trim())
+        .filter(Boolean)
+      for (const bey of pieces) {
+        if (seen.has(bey)) continue
+        seen.add(bey)
+        next.push(bey)
+      }
     }
     return next
+  }
+
+  function normalizeCombos(
+    existing: PlayerProfile | undefined,
+    incomingCombos: Combo[],
+    legacyIncomingBeys: Array<string | undefined>,
+  ): Combo[] {
+    const map = new Map<string, Combo>()
+    const comboKey = (combo: Combo) => normalizeBeys(combo.beys).join('|')
+    function upsertByBeys(candidate: Combo): void {
+      const beys = normalizeBeys(candidate.beys)
+      if (beys.length === 0) return
+      const next: Combo = { ...candidate, beys }
+      const key = comboKey(next)
+      const prev = map.get(key)
+      if (!prev) {
+        map.set(key, next)
+        return
+      }
+      // Keep the most recently used version while preserving optional display name.
+      const prevTime = prev.lastUsed || ''
+      const nextTime = next.lastUsed || ''
+      map.set(
+        key,
+        nextTime >= prevTime
+          ? { ...next, name: next.name ?? prev.name }
+          : { ...prev, name: prev.name ?? next.name },
+      )
+    }
+    for (const combo of existing?.combos ?? []) {
+      if (!combo.id || combo.beys.length === 0) continue
+      upsertByBeys(combo)
+    }
+    for (const combo of incomingCombos) {
+      if (!combo.id || combo.beys.length === 0) continue
+      upsertByBeys(combo)
+    }
+    for (const bey of legacyIncomingBeys) {
+      const beys = normalizeBeys([bey])
+      if (beys.length === 0) continue
+      upsertByBeys({
+        id: `legacy-${beys[0]}`,
+        beys,
+        lastUsed: new Date().toISOString(),
+      })
+    }
+    return [...map.values()].sort((a, b) => (b.lastUsed || '').localeCompare(a.lastUsed || ''))
   }
 
   const map = new Map<string, PlayerProfile>()
@@ -56,16 +109,40 @@ function buildCatalog(tournaments: TournamentRecord[], rawCatalog: unknown): Pla
       const rawCombos = Array.isArray(o.bey_combos)
         ? o.bey_combos.filter((v): v is string => typeof v === 'string')
         : []
-      const combos = mergeCombos(existing, [
-        typeof o.default_bey_name === 'string' ? o.default_bey_name : undefined,
-        ...rawCombos,
+      const rawComboObjects = Array.isArray(o.combos)
+        ? o.combos
+            .map((combo): Combo | null => {
+              if (!combo || typeof combo !== 'object') return null
+              const c = combo as Record<string, unknown>
+              if (typeof c.id !== 'string' || !Array.isArray(c.beys)) return null
+              const beys = c.beys.filter((b): b is string => typeof b === 'string')
+              return {
+                id: c.id,
+                beys,
+                lastUsed:
+                  typeof c.lastUsed === 'string' ? c.lastUsed : new Date().toISOString(),
+                name: typeof c.name === 'string' ? c.name : undefined,
+              }
+            })
+            .filter((v): v is Combo => Boolean(v))
+        : []
+      const legacyIncoming =
+        rawComboObjects.length > 0
+          ? []
+          : [
+              typeof o.default_bey_name === 'string' ? o.default_bey_name : undefined,
+              ...rawCombos,
+            ]
+      const combos = normalizeCombos(existing, rawComboObjects, [
+        ...legacyIncoming,
       ])
       map.set(o.id, {
         id: o.id,
         name: o.name,
         created_at: typeof o.created_at === 'string' ? o.created_at : new Date().toISOString().slice(0, 10),
-        default_bey_name: typeof o.default_bey_name === 'string' ? o.default_bey_name : undefined,
-        bey_combos: combos,
+        combos,
+        default_bey_name: typeof o.default_bey_name === 'string' ? o.default_bey_name : combos[0]?.beys[0],
+        bey_combos: combos.map((c) => c.beys.join(', ')),
       })
     }
   }
@@ -73,12 +150,24 @@ function buildCatalog(tournaments: TournamentRecord[], rawCatalog: unknown): Pla
     const participants = t.state.participants as TournamentParticipant[]
     for (const p of participants) {
       const existing = map.get(p.player_id)
-      const combos = mergeCombos(existing, [p.bey_name])
+      const participantCombo =
+        p.beys && p.beys.length > 0
+          ? [
+              {
+                id: `participant-${p.id}`,
+                beys: normalizeBeys(p.beys),
+                lastUsed: new Date().toISOString(),
+              } as Combo,
+            ]
+          : []
+      const legacyBeys = participantCombo.length > 0 ? [] : [p.bey_name]
+      const combos = normalizeCombos(existing, participantCombo, legacyBeys)
       if (existing) {
         map.set(p.player_id, {
           ...existing,
-          bey_combos: combos,
-          default_bey_name: existing.default_bey_name ?? p.bey_name,
+          combos,
+          default_bey_name: existing.default_bey_name ?? combos[0]?.beys[0],
+          bey_combos: combos.map((c) => c.beys.join(', ')),
         })
         continue
       }
@@ -86,8 +175,9 @@ function buildCatalog(tournaments: TournamentRecord[], rawCatalog: unknown): Pla
         id: p.player_id,
         name: p.name,
         created_at: p.created_at,
-        default_bey_name: p.bey_name,
-        bey_combos: combos,
+        combos,
+        default_bey_name: combos[0]?.beys[0],
+        bey_combos: combos.map((c) => c.beys.join(', ')),
       })
     }
   }

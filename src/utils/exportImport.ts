@@ -1,13 +1,17 @@
 import type {
   BattleFormat,
   BxTmState,
+  Combo,
   FinishAction,
   Match,
   MatchStage,
   MatchLogEntry,
+  PlayerProfile,
   StadiumType,
+  TournamentCollection,
   TournamentFormat,
   TournamentParticipant,
+  TournamentRecord,
 } from '@/types/bxtm'
 import { APP_VERSION, FINISH_POINTS, emptyState } from '@/types/bxtm'
 
@@ -82,6 +86,11 @@ function isParticipant(v: unknown): v is TournamentParticipant {
   if (typeof o.name !== 'string' || !o.name) return false
   if (typeof o.created_at !== 'string') return false
   if (o.bey_name !== undefined && typeof o.bey_name !== 'string') return false
+  if (
+    o.beys !== undefined &&
+    (!Array.isArray(o.beys) || !o.beys.every((item) => typeof item === 'string'))
+  )
+    return false
   return true
 }
 
@@ -190,6 +199,9 @@ export function parseBxTmJson(text: string): ParseResult {
         name: o.name,
         created_at: o.created_at,
         bey_name: typeof o.bey_name === 'string' ? o.bey_name : undefined,
+        beys: Array.isArray(o.beys)
+          ? o.beys.filter((item): item is string => typeof item === 'string')
+          : undefined,
       }
     })
     .filter((v): v is TournamentParticipant => Boolean(v))
@@ -209,6 +221,10 @@ export function parseBxTmJson(text: string): ParseResult {
     app_version: version,
     tournament_name: root.tournament_name,
     target_points: root.target_points,
+    max_beys_per_player:
+      typeof root.max_beys_per_player === 'number' && root.max_beys_per_player >= 1
+        ? Math.floor(root.max_beys_per_player)
+        : 3,
     battle_format: coerceBattleFormat(root.battle_format),
     tournament_format: coerceTournamentFormat(root.tournament_format),
     playoff_enabled: Boolean(root.playoff_enabled),
@@ -263,6 +279,9 @@ export function normalizeImportedState(raw: unknown): ParseResult {
           name: o.name,
           created_at: o.created_at,
           bey_name: typeof o.bey_name === 'string' ? o.bey_name : undefined,
+          beys: Array.isArray(o.beys)
+            ? o.beys.filter((item): item is string => typeof item === 'string')
+            : undefined,
         }
       })
       .filter((v): v is TournamentParticipant => Boolean(v))
@@ -285,6 +304,10 @@ export function normalizeImportedState(raw: unknown): ParseResult {
       app_version: typeof root.app_version === 'string' ? root.app_version : APP_VERSION,
       tournament_name: typeof root.tournament_name === 'string' ? root.tournament_name : '',
       target_points: defaultTarget,
+      max_beys_per_player:
+        typeof root.max_beys_per_player === 'number' && root.max_beys_per_player >= 1
+          ? Math.floor(root.max_beys_per_player)
+          : base.max_beys_per_player,
       battle_format: coerceBattleFormat(root.battle_format),
       tournament_format: coerceTournamentFormat(root.tournament_format),
       playoff_enabled: Boolean(root.playoff_enabled),
@@ -298,4 +321,119 @@ export function normalizeImportedState(raw: unknown): ParseResult {
   }
 
   return { ok: false, error: 'Unsupported JSON shape' }
+}
+
+export type CollectionParseResult =
+  | { ok: true; data: TournamentCollection }
+  | { ok: false; error: string }
+
+function coercePlayerCatalog(rawCatalog: unknown): PlayerProfile[] {
+  if (!Array.isArray(rawCatalog)) return []
+  return rawCatalog
+    .map((entry): PlayerProfile | null => {
+      if (!entry || typeof entry !== 'object') return null
+      const o = entry as Record<string, unknown>
+      if (typeof o.id !== 'string' || typeof o.name !== 'string') return null
+      const combos = Array.isArray(o.combos)
+        ? o.combos
+            .map((combo): Combo | null => {
+              if (!combo || typeof combo !== 'object') return null
+              const c = combo as Record<string, unknown>
+              if (typeof c.id !== 'string' || !Array.isArray(c.beys)) return null
+              const beys = c.beys
+                .filter((item): item is string => typeof item === 'string')
+                .flatMap((item) =>
+                  item
+                    .split(',')
+                    .map((part) => part.trim())
+                    .filter(Boolean),
+                )
+              if (beys.length === 0) return null
+              return {
+                id: c.id,
+                beys,
+                lastUsed:
+                  typeof c.lastUsed === 'string'
+                    ? c.lastUsed
+                    : new Date().toISOString(),
+                name: typeof c.name === 'string' ? c.name : undefined,
+              }
+            })
+            .filter((combo): combo is Combo => Boolean(combo))
+        : []
+      return {
+        id: o.id,
+        name: o.name,
+        created_at:
+          typeof o.created_at === 'string'
+            ? o.created_at
+            : new Date().toISOString().slice(0, 10),
+        combos,
+        default_bey_name:
+          typeof o.default_bey_name === 'string'
+            ? o.default_bey_name
+            : combos[0]?.beys[0],
+        bey_combos: Array.isArray(o.bey_combos)
+          ? o.bey_combos.filter((item): item is string => typeof item === 'string')
+          : combos.map((combo) => combo.beys.join(', ')),
+      }
+    })
+    .filter((profile): profile is PlayerProfile => Boolean(profile))
+}
+
+export function normalizeImportedCollection(raw: unknown): CollectionParseResult {
+  if (!raw || typeof raw !== 'object') {
+    return { ok: false, error: 'Root must be an object' }
+  }
+  const root = raw as Record<string, unknown>
+  if (!Array.isArray(root.tournaments)) {
+    return { ok: false, error: 'Invalid tournaments' }
+  }
+
+  const tournaments: TournamentRecord[] = []
+  for (const item of root.tournaments) {
+    if (!item || typeof item !== 'object') continue
+    const rec = item as Record<string, unknown>
+    if (typeof rec.id !== 'string') continue
+    const normalized = normalizeImportedState(rec.state)
+    if (!normalized.ok) continue
+    tournaments.push({
+      id: rec.id,
+      created_at:
+        typeof rec.created_at === 'string' ? rec.created_at : new Date().toISOString(),
+      updated_at:
+        typeof rec.updated_at === 'string' ? rec.updated_at : new Date().toISOString(),
+      state: normalized.data,
+    })
+  }
+  if (tournaments.length === 0) {
+    return { ok: false, error: 'Invalid tournaments' }
+  }
+
+  const activeTournamentId =
+    typeof root.active_tournament_id === 'string' &&
+    tournaments.some((t) => t.id === root.active_tournament_id)
+      ? root.active_tournament_id
+      : tournaments[0]!.id
+
+  return {
+    ok: true,
+    data: {
+      app_version: APP_VERSION,
+      active_tournament_id: activeTournamentId,
+      tournaments,
+      player_catalog: coercePlayerCatalog(root.player_catalog),
+    },
+  }
+}
+
+export function serializeCollection(collection: TournamentCollection): string {
+  return JSON.stringify(
+    {
+      ...collection,
+      app_version: APP_VERSION,
+    },
+    null,
+    2,
+  )
 }

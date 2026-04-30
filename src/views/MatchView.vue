@@ -29,10 +29,10 @@ const p1 = computed(() => (match.value ? store.playerById(match.value.p1_partici
 const p2 = computed(() => (match.value ? store.playerById(match.value.p2_participant_id) : undefined))
 const activeMatch = computed(() => (isQuickMatch.value ? quickMatch.value : match.value))
 const activeP1 = computed(() =>
-  isQuickMatch.value ? { id: QUICK_P1_ID, name: t('lobby.p1'), bey_name: '' } : p1.value,
+  isQuickMatch.value ? { id: QUICK_P1_ID, name: t('lobby.p1'), bey_name: '', beys: [] } : p1.value,
 )
 const activeP2 = computed(() =>
-  isQuickMatch.value ? { id: QUICK_P2_ID, name: t('lobby.p2'), bey_name: '' } : p2.value,
+  isQuickMatch.value ? { id: QUICK_P2_ID, name: t('lobby.p2'), bey_name: '', beys: [] } : p2.value,
 )
 const targetPoints = computed(() => Math.max(1, activeMatch.value?.target_points ?? 4))
 const isMatchCompleted = computed(
@@ -84,6 +84,16 @@ const actions: { key: FinishAction; labelKey: string }[] = [
   { key: 'Burst Finish', labelKey: 'match.bf' },
   { key: 'Xtreme Finish', labelKey: 'match.xf' },
 ]
+
+function comboParts(participant: { beys?: string[]; bey_name?: string } | undefined): string[] {
+  if (!participant) return []
+  const fromBeys = participant.beys?.map((item) => item.trim()).filter(Boolean) ?? []
+  if (fromBeys.length > 0) return fromBeys
+  return (participant.bey_name ?? '')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+}
 
 function triggerHaptic(action: FinishAction) {
   if (typeof navigator === 'undefined' || !('vibrate' in navigator)) return
@@ -271,7 +281,21 @@ watch(
       >
         <div class="z-10 px-6 py-4 shrink-0">
           <h2 class="truncate text-xl font-black uppercase italic leading-none tracking-tight">{{ p.name }}</h2>
-          <p class="truncate text-xs font-bold text-slate-500 italic mt-1.5">{{ p.bey_name || t('match.noBey') }}</p>
+          <div class="mt-2 flex flex-wrap gap-1">
+            <span
+              v-for="(part, partIdx) in comboParts(p)"
+              :key="'match-combo-' + p.id + '-' + partIdx"
+              class="rounded-full border border-slate-700 bg-slate-900/80 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-slate-300"
+            >
+              {{ part }}
+            </span>
+            <span
+              v-if="comboParts(p).length === 0"
+              class="rounded-full border border-slate-700 bg-slate-900/80 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-slate-500"
+            >
+              {{ t('match.noBey') }}
+            </span>
+          </div>
         </div>
 
         <div class="flex-1 flex items-center justify-center z-10 min-h-0">

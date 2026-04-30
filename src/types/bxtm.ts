@@ -1,7 +1,16 @@
+export interface Combo {
+  id: string
+  beys: string[]
+  lastUsed: string
+  name?: string
+}
+
 export interface PlayerProfile {
   id: string
   name: string
   created_at: string
+  combos: Combo[]
+  // Legacy fields kept for backward compatibility and migration.
   default_bey_name?: string
   bey_combos?: string[]
 }
@@ -12,6 +21,7 @@ export interface TournamentParticipant {
   name: string
   created_at: string
   bey_name?: string
+  beys?: string[]
 }
 
 export type MatchStatus = 'pending' | 'in_progress' | 'completed'
@@ -69,6 +79,7 @@ export interface BxTmState {
   app_version: string
   tournament_name: string
   target_points: number
+  max_beys_per_player: number
   battle_format: BattleFormat
   tournament_format: TournamentFormat
   playoff_enabled: boolean
@@ -106,6 +117,7 @@ export function emptyState(): BxTmState {
     app_version: APP_VERSION,
     tournament_name: '',
     target_points: 4,
+    max_beys_per_player: 3,
     battle_format: 'singles',
     tournament_format: 'free',
     playoff_enabled: false,
